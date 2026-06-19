@@ -241,7 +241,7 @@ export default function Items() {
         <div className="text-center py-20 text-zinc-400">加载中...</div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-zinc-100 overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="table-wrapper">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-100 bg-zinc-50/50 text-left">

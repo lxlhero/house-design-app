@@ -83,7 +83,7 @@ export default function Import() {
             <CheckCircle size={18} className="text-emerald-500" />
             <span className="font-semibold text-emerald-700">全量替换完成</span>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
             <div className="bg-white rounded-lg p-3 text-center">
               <div className="text-2xl font-bold text-indigo-600">{result.summary.items_count || 0}</div>
               <div className="text-xs text-zinc-500 mt-1">采购项</div>

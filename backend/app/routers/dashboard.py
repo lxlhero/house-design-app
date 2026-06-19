@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from ..database import get_db
-from ..models.models import Category, Item, Phase, FloorBudget, VersionSnapshot
+from ..models.models import Category, Item, Phase, FloorBudget, BudgetConfig, VersionSnapshot
 from ..logging_config import get_logger
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])

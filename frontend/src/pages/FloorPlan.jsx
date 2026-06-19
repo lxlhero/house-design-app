@@ -533,8 +533,8 @@ function LampModel({ w, h, color }) {
 }
 
 // ═══════════════════════ BLENDER + FURNITURE SCENE ═══════════════════════
-function BlenderScene({ furniture, selectedId, onSelect, onDragEnd, presets }) {
-  const gltf = useGLTF('/models/villa_1F.glb')
+function BlenderScene({ floor, furniture, selectedId, onSelect, onDragEnd, presets }) {
+  const gltf = useGLTF(`/models/villa_${floor}.glb`)
   const { camera } = useThree()
 
   useEffect(() => {
@@ -752,7 +752,7 @@ export default function FloorPlanPage() {
                 {cat.name}
               </button>
               {expandedCategory === cat.name && (
-                <div className="grid grid-cols-3 gap-1.5 ml-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 ml-3">
                   {cat.items.map(type => (
                     <button
                       key={type}
@@ -794,6 +794,7 @@ export default function FloorPlanPage() {
           >
             <Suspense fallback={<Html center><div className="text-zinc-400">加载模型...</div></Html>}>
               <BlenderScene
+                floor={floor}
                 furniture={furniture}
                 selectedId={selectedId}
                 onSelect={handleSelect}

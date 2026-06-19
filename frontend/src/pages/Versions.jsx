@@ -1,27 +1,57 @@
 import { useState, useEffect } from 'react'
 import { RotateCcw, Save, AlertTriangle, Check, Tag, Sparkles } from 'lucide-react'
 
+// 带认证的 fetch 封装
+function authedFetch(url, options = {}) {
+  const token = localStorage.getItem('house_token') || ''
+  return fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  })
+}
+
 export default function Versions() {
   const [versions, setVersions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [rollingBack, setRollingBack] = useState(null)
   const [showConfirm, setShowConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
 
   const fetchVersions = async () => {
-    const resp = await fetch('/api/versions')
-    setVersions(await resp.json())
-    setLoading(false)
+    try {
+      const resp = await authedFetch('/api/versions')
+      if (!resp.ok) throw new Error(`服务器错误 (${resp.status})`)
+      setVersions(await resp.json())
+      setError(null)
+    } catch (e) {
+      setError(e.message || '加载失败')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { fetchVersions() }, [])
 
   const handleSave = async () => {
     setSaving(true)
-    await fetch('/api/versions/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
-    setMessage({ type: 'success', text: '版本保存成功' })
-    await fetchVersions()
+    try {
+      const resp = await authedFetch('/api/versions/save', { method: 'POST', body: JSON.stringify({}) })
+      const data = await resp.json()
+      if (resp.ok) {
+        setMessage({ type: 'success', text: '版本保存成功' })
+        await fetchVersions()
+      } else {
+        setMessage({ type: 'error', text: data.detail || '保存失败' })
+      }
+    } catch {
+      setMessage({ type: 'error', text: '保存失败，请重试' })
+    }
     setSaving(false)
     setTimeout(() => setMessage(null), 3000)
   }
@@ -30,22 +60,37 @@ export default function Versions() {
     setRollingBack(versionId)
     setShowConfirm(null)
     try {
-      const resp = await fetch(`/api/versions/rollback/${versionId}`, { method: 'POST' })
+      const resp = await authedFetch(`/api/versions/rollback/${versionId}`, { method: 'POST' })
       const data = await resp.json()
-      if (data.ok) {
-        setMessage({ type: 'success', text: data.message })
+      if (resp.ok) {
+        setMessage({ type: 'success', text: data.message || '回退成功' })
         setTimeout(() => window.location.reload(), 1500)
       } else {
         setMessage({ type: 'error', text: data.detail || '回退失败' })
       }
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: '回退失败，请重试' })
     }
     setRollingBack(null)
     setTimeout(() => setMessage(null), 4000)
   }
 
-  if (loading) return <div className="flex items-center justify-center h-96 text-zinc-400">加载中...</div>
+  if (error) return (
+    <div className="flex flex-col items-center justify-center h-96 gap-3">
+      <div className="text-4xl">😞</div>
+      <div className="text-zinc-600 text-sm">{error}</div>
+      <button onClick={fetchVersions}
+        className="mt-2 px-6 py-2 bg-indigo-600 text-white text-sm rounded-xl hover:bg-indigo-700 transition-colors"
+      >重试</button>
+    </div>
+  )
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-96 gap-3">
+      <div className="animate-spin w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full" />
+      <div className="text-zinc-400 text-sm">加载中…</div>
+    </div>
+  )
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -84,7 +129,6 @@ export default function Versions() {
             <div key={v.id} className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all ${
               isLatest ? 'border-indigo-200 ring-1 ring-indigo-100' : 'border-zinc-100'
             }`}>
-              {/* Version header */}
               <div className="flex items-center justify-between px-5 py-4 bg-zinc-50/50 border-b border-zinc-100">
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
@@ -124,7 +168,6 @@ export default function Versions() {
                 </div>
               </div>
 
-              {/* Features list */}
               {features.length > 0 && (
                 <div className="px-5 py-4">
                   <ul className="space-y-1.5">

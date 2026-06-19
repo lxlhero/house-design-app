@@ -1,10 +1,22 @@
 const API = '/api'
 
+function getToken() {
+  return localStorage.getItem('house_token') || ''
+}
+
 async function request(url, options = {}) {
-  const res = await fetch(`${API}${url}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
-  })
+  const token = getToken()
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options.headers,
+  }
+  const res = await fetch(`${API}${url}`, { ...options, headers })
+  if (res.status === 401) {
+    localStorage.removeItem('house_token')
+    window.location.href = '/login'
+    throw new Error('未登录')
+  }
   if (!res.ok) throw new Error(`API Error: ${res.status}`)
   return res.json()
 }
