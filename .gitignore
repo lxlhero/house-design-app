@@ -1,0 +1,56 @@
+# 日志文件（每次运行生成，不提交）
+logs/
+*.log
+
+# 数据库文件（本地数据，不提交）
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# 版本快照（数据库副本，不提交）
+versions/
+
+# 上传文件（含户型图，太大，不提交）
+uploads/
+assets/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Conda
+.conda/
+
+# 大文件（渲染图 > 1MB）
+*.blend
+*.blend1
+
+# 临时文件
+tmp/
+temp/
