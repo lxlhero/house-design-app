@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { playClick, playSuccess, playError } from '../sound'
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -10,6 +11,7 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault()
+    playClick()
     setError('')
     setLoading(true)
     try {
@@ -19,7 +21,8 @@ export default function Login() {
         body: JSON.stringify({ username, password }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.detail || '登录失败'); return }
+      if (!res.ok) { playError(); setError(data.detail || '登录失败'); return }
+      playSuccess()
       localStorage.setItem('house_token', data.token)
       navigate('/', { replace: true })
     } catch { setError('网络错误，请稍后重试') }

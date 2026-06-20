@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 import { Home, Package, Upload, LayoutGrid, History } from 'lucide-react'
 import { api } from '../api'
+import { playTap, playClick } from '../sound'
 
 function formatMoney(v) {
   if (!v) return '...'
@@ -57,6 +58,7 @@ export default function Layout() {
           {navItems.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to} to={to} end={to === '/'}
+              onClick={() => playTap()}
               className={({ isActive }) =>
                 `flex items-center gap-sm px-md py-sm rounded-lg text-callout font-medium
                 transition-all duration-150 ${isActive
@@ -92,7 +94,7 @@ export default function Layout() {
           <p className="text-caption text-text-tertiary">嘉兴 · 五层别墅</p>
         </div>
         <button
-          onClick={() => setMobileOpen(v => !v)}
+          onClick={() => { playClick(); setMobileOpen(v => !v) }}
           className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-black/3 transition-colors"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
