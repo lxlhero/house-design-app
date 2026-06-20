@@ -1,11 +1,12 @@
 """采购清单 CRUD API"""
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional
 from ..database import get_db
 from ..models.models import Item
 from ..services.excel_store import sync_db_to_excel
+from ..services.decision_tracker import track
 from ..logging_config import get_logger
 
 router = APIRouter(prefix="/api/items", tags=["items"])
@@ -107,10 +108,13 @@ def get_item(item_id: int, db: Session = Depends(get_db)):
 
 
 @router.patch("/{item_id}")
-def update_item(item_id: int, data: dict, db: Session = Depends(get_db)):
+def update_item(item_id: int, data: dict, db: Session = Depends(get_db), request: Request = None):
     i = db.query(Item).filter(Item.id == item_id).first()
     if not i:
         raise HTTPException(status_code=404, detail="Item not found")
+
+    old_status = i.status
+    old_cost = i.actual_cost
 
     updatable = [
         "status", "actual_cost", "actual_paid", "supplier",
@@ -122,8 +126,13 @@ def update_item(item_id: int, data: dict, db: Session = Depends(get_db)):
 
     db.commit()
     db.refresh(i)
-    # 同步到本地 Excel
     sync_db_to_excel(db)
+    # 决策追踪
+    changed = {k: data[k] for k in data if k in updatable and data.get(k) != getattr(i, k)}
+    track("item_update", f"物品:{item_id}",
+          detail={"name": i.item_name, "changes": changed},
+          session_id=getattr(request.state, "session_id", "-") if request else "-",
+          request_id=getattr(request.state, "trace_id", "-") if request else "-")
     logger.info("Item updated", extra={"extra": {"item_id": item_id, "fields": [k for k in data if k in updatable]}})
     return {"ok": True, "id": i.id}
 

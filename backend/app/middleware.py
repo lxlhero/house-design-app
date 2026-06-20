@@ -17,11 +17,18 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:8])
+        session_id = request.headers.get("X-Session-ID", "-")
+        decision_id = request.headers.get("X-Decision-ID", "-")
         set_request_context(
             request_id=request_id,
             path=request.url.path,
             method=request.method,
         )
+
+        # 存 request.state 供路由使用
+        request.state.trace_id = request_id
+        request.state.session_id = session_id
+        request.state.decision_id = decision_id
 
         start_time = time.time()
 

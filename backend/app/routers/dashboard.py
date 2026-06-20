@@ -1,10 +1,11 @@
 """仪表盘 API"""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from ..database import get_db
 from ..models.models import Category, Item, Phase, FloorBudget, BudgetConfig, VersionSnapshot
 from ..services.excel_store import sync_db_to_excel
+from ..services.decision_tracker import track
 from ..logging_config import get_logger
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -59,11 +60,13 @@ def overview(db: Session = Depends(get_db)):
 
 
 @router.patch("/budget")
-def update_budget(data: dict, db: Session = Depends(get_db)):
-    """更新总预算：修改 BudgetConfig + 自动调整预备金来平衡"""
+def update_budget(data: dict, db: Session = Depends(get_db), request: Request = None):
+    """更新总预算"""
     new_total = data.get("total_budget", 0)
     if new_total <= 0:
         return {"error": "总预算必须大于0"}
+
+    old_total = _get_total_budget(db)
 
     # 更新/创建 BudgetConfig
     cfg = db.query(BudgetConfig).filter(BudgetConfig.key == "total_budget").first()
@@ -85,8 +88,13 @@ def update_budget(data: dict, db: Session = Depends(get_db)):
         reserve_cat.ratio = max(0, new_reserve / new_total) if new_total > 0 else 0
 
     db.commit()
-    # 同步到本地 Excel
+    db.commit()
     sync_db_to_excel(db)
+    # 决策追踪
+    track("budget_update", "总预算",
+          detail={"old": old_total, "new": new_total},
+          session_id=getattr(request.state, "session_id", "-") if request else "-",
+          request_id=getattr(request.state, "trace_id", "-") if request else "-")
     return {"ok": True, "total_budget": new_total, "reserve_adjusted_to": max(0, new_reserve)}
 
 
