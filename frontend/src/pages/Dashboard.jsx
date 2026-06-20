@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { api } from '../api'
-import { TrendingUp, Package, Wallet, ArrowDownToLine, Edit3, Check, X, ChevronDown, ChevronRight, ShoppingCart } from 'lucide-react'
+import { TrendingUp, Package, Wallet, ArrowDownToLine, Edit3, Check, X, ChevronDown, ChevronRight, ShoppingCart, RefreshCw } from 'lucide-react'
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#14b8a6']
 
@@ -77,6 +77,24 @@ export default function Dashboard() {
     })
   }, [])
 
+  // 页面从后台切回时自动刷新数据（Agent 修改后仪表盘即时可见）
+  const fetchData = async () => {
+    try {
+      const [ov, cat, ph, fl] = await Promise.all([
+        api.overview(), api.categories(true), api.phases(), api.floors()
+      ])
+      setOverview(ov)
+      setCategories(cat)
+      setPhases(ph)
+      setFloors(fl)
+    } catch {}
+  }
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchData() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
   const toggleCat = (id) => {
     setExpandedCats(prev => ({ ...prev, [id]: !prev[id] }))
   }
@@ -85,10 +103,7 @@ export default function Dashboard() {
     const val = parseFloat(budgetInput) * 10000
     if (val > 0) {
       await api.updateBudget(val)
-      const ov = await api.overview()
-      const cat = await api.categories(true)
-      setOverview(ov)
-      setCategories(cat)
+      fetchData()
     }
     setEditingBudget(false)
   }
@@ -128,7 +143,16 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-zinc-800">仪表盘</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-zinc-800">仪表盘</h2>
+          <button
+            onClick={fetchData}
+            className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-indigo-500 transition-colors"
+            title="刷新数据"
+          >
+            <RefreshCw size={16} />
+          </button>
+        </div>
         <p className="text-sm text-zinc-500 mt-1">嘉兴五层别墅 · 总预算 {formatMoney(overview.total_budget)}</p>
       </div>
 

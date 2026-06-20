@@ -124,6 +124,13 @@ export default function Items() {
   useEffect(() => { fetchItems() }, [fetchItems])
   useEffect(() => { api.filterOptions().then(setFilterOptions) }, [])
 
+  // 页面从后台切回时自动刷新
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchItems() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [fetchItems])
+
   const updateItem = async (id, data) => {
     await api.updateItem(id, data)
     setItems(prev => prev.map(i => i.id === id ? { ...i, ...data } : i))
@@ -160,14 +167,21 @@ export default function Items() {
             {itemsWithActual > 0 && ` · ${itemsWithActual} 项已录入实际花费`}
           </p>
         </div>
-        <a
-          href="/api/export/excel"
+        <button
+          onClick={async () => {
+            const token = localStorage.getItem('house_token') || ''
+            const resp = await fetch('/api/export/excel', { headers: { Authorization: `Bearer ${token}` } })
+            if (!resp.ok) return alert('下载失败，请先导入 Excel')
+            const blob = await resp.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a'); a.href = url; a.download = '装修预算_最新.xlsx'; a.click()
+            URL.revokeObjectURL(url)
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition-colors shadow-sm"
-          download
         >
           <Download size={16} />
           导出 Excel
-        </a>
+        </button>
       </div>
 
       {/* Budget vs Actual summary bar */}
