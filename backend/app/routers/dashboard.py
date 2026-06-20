@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from ..database import get_db
-from ..models.models import Category, Item, Phase, FloorBudget, BudgetConfig, VersionSnapshot
+from ..models.models import Category, Item, Phase, FloorBudget, BudgetConfig, ImportLog, VersionSnapshot
 from ..services.excel_store import sync_db_to_excel
 from ..services.decision_tracker import track
 from ..logging_config import get_logger
