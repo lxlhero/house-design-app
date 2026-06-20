@@ -7,6 +7,7 @@ from ..database import get_db
 from ..models.models import ImportLog
 from ..services.excel_importer import ExcelImporter
 from ..services.version_manager import create_snapshot, cleanup_old_snapshots
+from ..services.excel_store import save_uploaded_excel
 from ..logging_config import get_logger
 
 router = APIRouter(prefix="/api/import", tags=["import"])
@@ -27,6 +28,10 @@ async def import_excel(file: UploadFile = File(...), db: Session = Depends(get_d
         tmp_path = tmp.name
 
     try:
+        # 保存到本地备份（Excel 真理源）
+        saved_path = save_uploaded_excel(tmp_path)
+        logger.info("Excel saved to local store", extra={"extra": {"path": saved_path}})
+
         importer = ExcelImporter(tmp_path)
         result = importer.import_all(db)
 

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from ..database import get_db
 from ..models.models import Category, Item, Phase, FloorBudget, BudgetConfig, VersionSnapshot
+from ..services.excel_store import sync_db_to_excel
 from ..logging_config import get_logger
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -84,6 +85,8 @@ def update_budget(data: dict, db: Session = Depends(get_db)):
         reserve_cat.ratio = max(0, new_reserve / new_total) if new_total > 0 else 0
 
     db.commit()
+    # 同步到本地 Excel
+    sync_db_to_excel(db)
     return {"ok": True, "total_budget": new_total, "reserve_adjusted_to": max(0, new_reserve)}
 
 

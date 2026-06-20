@@ -1,7 +1,7 @@
 ---
 version: alpha
-name: 装修管家
-description: Apple Human Interface 风格 — 干净通透、内在一致、让内容发光。
+name: 装修管家 Premium
+description: Apple HIG + Linear 精密美学 — 玻璃质感、精密字体、iPad 专属交互。
 colors:
   # ── 品牌 ──
   blue: "#007AFF"

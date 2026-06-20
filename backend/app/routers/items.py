@@ -5,6 +5,7 @@ from sqlalchemy import func
 from typing import Optional
 from ..database import get_db
 from ..models.models import Item
+from ..services.excel_store import sync_db_to_excel
 from ..logging_config import get_logger
 
 router = APIRouter(prefix="/api/items", tags=["items"])
@@ -121,6 +122,8 @@ def update_item(item_id: int, data: dict, db: Session = Depends(get_db)):
 
     db.commit()
     db.refresh(i)
+    # 同步到本地 Excel
+    sync_db_to_excel(db)
     logger.info("Item updated", extra={"extra": {"item_id": item_id, "fields": [k for k in data if k in updatable]}})
     return {"ok": True, "id": i.id}
 
@@ -137,5 +140,7 @@ def batch_update_status(data: dict, db: Session = Depends(get_db)):
         {"status": new_status}, synchronize_session=False
     )
     db.commit()
+    # 同步到本地 Excel
+    sync_db_to_excel(db)
     logger.info("Batch status update", extra={"extra": {"count": updated, "status": new_status}})
     return {"ok": True, "updated": updated}
