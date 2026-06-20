@@ -24,7 +24,11 @@ def download_excel(db: Session = Depends(get_db)):
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
     except FileNotFoundError:
-        return {"error": "尚未导入过 Excel 文件，请先在「导入导出」页面上传"}
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            {"error": "尚未导入过 Excel 文件，请先在「导入导出」页面上传"},
+            status_code=404,
+        )
 
 
 @router.get("/inventory")

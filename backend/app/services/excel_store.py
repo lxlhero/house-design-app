@@ -53,6 +53,35 @@ def get_latest_excel_path() -> str | None:
     return None
 
 
+def _find_col_map(ws, header_row: int, new_headers: list[str]) -> dict:
+    """智能查找/追加列映射"""
+    existing = {}
+    last_col = 0
+    for col in range(1, ws.max_column + 20):
+        val = ws.cell(row=header_row, column=col).value
+        if val is not None:
+            existing[str(val).strip()] = col
+            last_col = col
+        elif col > ws.max_column + 5:
+            break
+
+    col_map = {}
+    next_col = last_col
+    for h in new_headers:
+        if h in existing:
+            col_map[h] = existing[h]
+        else:
+            next_col += 1
+            col_map[h] = next_col
+            cell = ws.cell(row=header_row, column=next_col, value=h)
+            if last_col > 0:
+                src = ws.cell(row=header_row, column=last_col)
+                if src.font: cell.font = copy(src.font)
+                if src.fill: cell.fill = copy(src.fill)
+                if src.alignment: cell.alignment = copy(src.alignment)
+    return col_map
+
+
 def sync_db_to_excel(db: Session) -> str | None:
     """
     将数据库中物品的状态/实际花费/供应商回写到本地 Excel
@@ -69,39 +98,20 @@ def sync_db_to_excel(db: Session) -> str | None:
 
     wb = openpyxl.load_workbook(path)
 
-    # 尝试更新「采购清单」sheet
     if "采购清单" not in wb.sheetnames:
         return path
 
     ws = wb["采购清单"]
-    header_row = 3  # 标题行（根据 Excel 结构）
-    existing_cols = ws.max_column
-
-    # 确保追加列存在
-    new_headers = ["实际花费", "已支付", "供应商"]
-    need_new_headers = False
-    for i, h in enumerate(new_headers):
-        cell = ws.cell(row=header_row, column=existing_cols + i + 1)
-        if cell.value != h:
-            need_new_headers = True
-            break
-
-    if need_new_headers:
-        for i, h in enumerate(new_headers):
-            cell = ws.cell(row=header_row, column=existing_cols + i + 1, value=h)
-            src_cell = ws.cell(row=header_row, column=existing_cols)
-            if src_cell.font:
-                cell.font = copy(src_cell.font)
-            if src_cell.fill:
-                cell.fill = copy(src_cell.fill)
-            if src_cell.alignment:
-                cell.alignment = copy(src_cell.alignment)
+    header_row = 3
+    col_map = _find_col_map(ws, header_row, ["实际花费", "已支付", "供应商"])
 
     # 遍历数据行
     for row in ws.iter_rows(min_row=4, max_row=ws.max_row):
         if len(row) < 3:
             continue
-        item_name_cell = row[2]  # C 列 = 采购项
+        item_name_cell = row[2]
+        status_cell = row[12] if len(row) > 12 else None
+
         item_name = str(item_name_cell.value).strip() if item_name_cell.value else ""
         if not item_name or item_name in ("采购项", ""):
             continue
@@ -112,18 +122,14 @@ def sync_db_to_excel(db: Session) -> str | None:
 
         row_num = item_name_cell.row
 
-        # 回填状态（M 列 = 第 13 列）
-        if len(row) > 12 and db_item.status:
-            row[12].value = db_item.status
+        # 回填状态
+        if status_cell and db_item.status:
+            status_cell.value = db_item.status
 
-        # 回填实际花费
-        actual_col = existing_cols + 1
-        if not need_new_headers:
-            # 检查是否已有该列
-            pass
-        ws.cell(row=row_num, column=actual_col, value=db_item.actual_cost or 0)
-        ws.cell(row=row_num, column=actual_col + 1, value=db_item.actual_paid or 0)
-        ws.cell(row=row_num, column=actual_col + 2, value=db_item.supplier or "")
+        # 回填实际花费 / 已支付 / 供应商
+        ws.cell(row=row_num, column=col_map["实际花费"], value=db_item.actual_cost or 0)
+        ws.cell(row=row_num, column=col_map["已支付"], value=db_item.actual_paid or 0)
+        ws.cell(row=row_num, column=col_map["供应商"], value=db_item.supplier or "")
 
     wb.save(path)
     return path

@@ -31,9 +31,10 @@ class ExcelExporter:
             wb.save(output_path)
             return output_path
         else:
-            # 直接覆写本地备份（保持同步）
-            wb.save(template)
-            return template
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+                wb.save(tmp.name)
+                return tmp.name
 
     def _update_procurement_sheet(self, wb):
         """更新采购清单 sheet：回填状态 + 追加实际花费/已支付/供应商列"""
@@ -41,22 +42,42 @@ class ExcelExporter:
             return
 
         ws = wb["采购清单"]
-
-        # 找到标题行（第 3 行），追加新列名
         header_row = 3
-        existing_cols = ws.max_column
         new_headers = ["实际花费", "已支付", "供应商"]
-        for i, h in enumerate(new_headers):
-            cell = ws.cell(row=header_row, column=existing_cols + i + 1, value=h)
-            src_cell = ws.cell(row=header_row, column=existing_cols)
-            if src_cell.font:
-                cell.font = copy(src_cell.font)
-            if src_cell.fill:
-                cell.fill = copy(src_cell.fill)
-            if src_cell.alignment:
-                cell.alignment = copy(src_cell.alignment)
 
-        # 遍历数据行（第 4 行开始）
+        # ── 智能查找/追加列 ──
+        # 扫描标题行，找到现有列范围和新列位置
+        existing_headers = {}
+        last_col = 0
+        for col in range(1, ws.max_column + 20):  # +20 留余量
+            val = ws.cell(row=header_row, column=col).value
+            if val is not None:
+                existing_headers[str(val).strip()] = col
+                last_col = col
+            elif col > ws.max_column + 5:
+                break  # 连续空列超过5列则停止
+
+        # 检查哪些新列名已存在
+        col_map = {}
+        next_col = last_col
+        for h in new_headers:
+            if h in existing_headers:
+                col_map[h] = existing_headers[h]  # 复用已有列
+            else:
+                next_col += 1
+                col_map[h] = next_col
+                # 添加表头
+                cell = ws.cell(row=header_row, column=next_col, value=h)
+                if last_col > 0:
+                    src_cell = ws.cell(row=header_row, column=last_col)
+                    if src_cell.font:
+                        cell.font = copy(src_cell.font)
+                    if src_cell.fill:
+                        cell.fill = copy(src_cell.fill)
+                    if src_cell.alignment:
+                        cell.alignment = copy(src_cell.alignment)
+
+        # ── 遍历数据行，回填 ──
         for row in ws.iter_rows(min_row=4, max_row=ws.max_row):
             if len(row) < 3:
                 continue
@@ -77,7 +98,7 @@ class ExcelExporter:
             if status_cell and db_item.status:
                 status_cell.value = db_item.status
 
-            # 追加实际花费 / 已支付 / 供应商
-            ws.cell(row=row_num, column=existing_cols + 1, value=db_item.actual_cost or 0)
-            ws.cell(row=row_num, column=existing_cols + 2, value=db_item.actual_paid or 0)
-            ws.cell(row=row_num, column=existing_cols + 3, value=db_item.supplier or "")
+            # 回填实际花费 / 已支付 / 供应商（按智能定位的列号）
+            ws.cell(row=row_num, column=col_map["实际花费"], value=db_item.actual_cost or 0)
+            ws.cell(row=row_num, column=col_map["已支付"], value=db_item.actual_paid or 0)
+            ws.cell(row=row_num, column=col_map["供应商"], value=db_item.supplier or "")
