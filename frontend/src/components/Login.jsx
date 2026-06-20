@@ -26,55 +26,66 @@ export default function Login() {
       localStorage.setItem('house_token', data.token)
       navigate('/', { replace: true })
     } catch {
-      setError('网络错误，请重试')
+      setError('网络错误，请稍后重试')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-blue-50 safe-area-inset">
-      <div className="w-full max-w-sm mx-4">
-        <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🏠</div>
-          <h1 className="text-2xl font-bold text-zinc-800">装修管家</h1>
-          <p className="text-sm text-zinc-500 mt-1">嘉兴别墅装修管理</p>
+    <div className="min-h-screen flex items-center justify-center bg-background p-lg" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="w-full max-w-sm">
+        {/* 品牌区 */}
+        <div className="text-center mb-xxl">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-blue/10 mb-lg">
+            <span className="text-4xl">🏠</span>
+          </div>
+          <h1 className="text-large-title font-bold text-label tracking-tight">装修管家</h1>
+          <p className="text-callout text-secondary-label mt-xs">嘉兴别墅装修管理系统</p>
         </div>
-        <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-lg border border-zinc-100 p-6 space-y-4">
+
+        {/* 登录卡片 */}
+        <form onSubmit={handleLogin} className="apple-card p-xl space-y-lg">
           <div>
-            <label className="block text-sm font-medium text-zinc-600 mb-1.5">用户名</label>
+            <label className="block text-caption font-semibold text-secondary-label mb-sm uppercase tracking-wider">用户名</label>
             <input
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 text-zinc-900 text-base focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+              className="apple-input w-full"
               placeholder="输入用户名"
               autoComplete="username"
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-600 mb-1.5">密码</label>
+            <label className="block text-caption font-semibold text-secondary-label mb-sm uppercase tracking-wider">密码</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-zinc-200 text-zinc-900 text-base focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+              className="apple-input w-full"
               placeholder="输入密码"
               autoComplete="current-password"
             />
           </div>
+
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 px-4 py-2.5 rounded-xl">{error}</div>
+            <div className="text-footnote text-red bg-red/10 px-md py-sm rounded-md">{error}</div>
           )}
+
           <button
             type="submit"
             disabled={loading || !username || !password}
-            className="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold text-base hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+            className="apple-btn-primary w-full mt-sm"
           >
-            {loading ? '登录中...' : '登录'}
+            {loading ? '登录中…' : '登录'}
           </button>
         </form>
+
+        <p className="text-caption text-tertiary-label text-center mt-xl">
+          嘉兴 · 五层别墅装修管理
+        </p>
       </div>
     </div>
   )

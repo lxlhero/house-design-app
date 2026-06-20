@@ -22,7 +22,7 @@ https://macbook-pro.taild2321d.ts.net
 
 ```bash
 # 1. 启动后端（8765端口，含前端页面）
-cd ~/code/ai_lab/house_work/house_design_app/backend
+cd ~/code/ai_lab/vibe_coding/house_design_app/backend
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8765 &
 
 # 2. 公网暴露
@@ -47,7 +47,7 @@ cd ~/code/ai_lab/house_work/house_design_app
 lsof -ti:8765 | xargs kill -9 2>/dev/null
 
 # 2. 启动后端
-cd ~/code/ai_lab/house_work/house_design_app/backend
+cd ~/code/ai_lab/vibe_coding/house_design_app/backend
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8765 &
 
 # 3. 重新暴露公网

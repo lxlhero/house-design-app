@@ -1,50 +1,204 @@
 @import "tailwindcss";
 
-/* ── iPad 触摸优化 ── */
+/* ═══════════════════════════════════════════
+   装修管家 · Apple HIG 设计系统
+   主色: #007AFF (System Blue)
+   字体: SF Pro (系统)
+   ═══════════════════════════════════════════ */
 
-/* 最小触摸目标 44pt（Apple HIG） */
-button, a, input, select, textarea, [role="button"], .clickable {
-  min-height: 44px;
-  min-width: 44px;
+@theme {
+  /* ── 颜色（语义化） ── */
+  --color-blue: #007AFF;
+  --color-blue-light: #409CFF;
+  --color-blue-dark: #0055CC;
+  --color-label: #000000;
+  --color-secondary-label: #3C3C4399;
+  --color-tertiary-label: #3C3C434D;
+  --color-placeholder: #3C3C434D;
+  --color-background: #F2F2F7;
+  --color-surface: #FFFFFF;
+  --color-grouped: #F9F9F9;
+  --color-red: #FF3B30;
+  --color-green: #34C759;
+  --color-orange: #FF9500;
+  --color-separator: #3C3C4333;
+  --color-border: #E5E5EA;
+
+  /* ── 圆角 ── */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* ── 间距 ── */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 20px;
+  --spacing-xl: 24px;
+  --spacing-xxl: 32px;
+
+  /* ── 字体大小 ── */
+  --text-large-title: 2.125rem;
+  --text-title-1: 1.75rem;
+  --text-title-2: 1.375rem;
+  --text-body: 1.0625rem;
+  --text-callout: 1rem;
+  --text-subhead: 0.9375rem;
+  --text-footnote: 0.8125rem;
+  --text-caption: 0.75rem;
+
+  /* ── 阴影 ── */
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  --shadow-nav: 0 0.5px 0 0 rgba(60, 60, 67, 0.2);
+  --shadow-modal: 0 8px 40px 0 rgba(0, 0, 0, 0.12);
 }
 
-/* iOS PWA 安全区域（避开刘海/底部指示条） */
+/* ═══════════════════════════════════════════
+   Base — Apple HIG 全局样式
+   ═══════════════════════════════════════════ */
+
 body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: var(--text-body);
+  line-height: 1.47;
+  letter-spacing: -0.022em;
+  color: var(--color-label);
+  background: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   -webkit-overflow-scrolling: touch;
 }
 
-/* 防止 iOS 双击缩放 */
-button, a {
+/* ── iPad 触摸优化 ── */
+button, a, input, select, textarea, [role="button"] {
+  min-height: 44px;
+  min-width: 44px;
   touch-action: manipulation;
 }
 
-/* 表格横向滚动优化 */
+/* ── 表格横向滚动 ── */
 .table-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  -webkit-transform: translateZ(0); /* GPU 加速 */
+  -webkit-transform: translateZ(0);
+}
+.table-wrapper table { min-width: 600px; }
+
+/* ── iOS 防数字识别为电话 ── */
+a[href^="tel"] { color: inherit; }
+
+/* ── Apple 风格滚动条 ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-separator); border-radius: 2px; }
+
+/* ── 选中色 ── */
+::selection { background: rgba(0, 122, 255, 0.2); color: var(--color-label); }
+
+/* ═══════════════════════════════════════════
+   Components — Apple 风格组件
+   ═══════════════════════════════════════════ */
+
+/* 卡片 */
+.apple-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  border: 0.5px solid var(--color-border);
 }
 
-.table-wrapper table {
-  min-width: 600px; /* iPad 9.7" 的舒适阅读宽度 */
+/* 导航栏毛玻璃 */
+.apple-nav {
+  background: rgba(242, 242, 247, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 0.5px solid var(--color-separator);
 }
 
-/* 卡片/布局间距适配 iPad */
-@media (min-width: 768px) {
-  .card-grid {
-    gap: 1rem;
-  }
+/* 主按钮 */
+.apple-btn-primary {
+  background: var(--color-blue);
+  color: white;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  padding: 14px 24px;
+  font-size: var(--text-callout);
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+.apple-btn-primary:hover { background: var(--color-blue-dark); }
+.apple-btn-primary:active { transform: scale(0.97); }
+.apple-btn-primary:disabled { opacity: 0.4; }
+
+/* 次按钮 */
+.apple-btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-blue);
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  padding: 14px 24px;
+  font-size: var(--text-callout);
+  border: 0.5px solid var(--color-border);
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+.apple-btn-secondary:hover { background: var(--color-grouped); }
+.apple-btn-secondary:active { transform: scale(0.97); }
+
+/* 输入框 */
+.apple-input {
+  background: var(--color-grouped);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-size: var(--text-callout);
+  color: var(--color-label);
+  transition: box-shadow 0.2s ease;
+}
+.apple-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+.apple-input::placeholder { color: var(--color-placeholder); }
+
+/* 徽章/标签 */
+.apple-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: var(--text-caption);
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  background: var(--color-separator);
+  color: var(--color-secondary-label);
+  letter-spacing: 0.02em;
+}
+.apple-badge-active {
+  background: var(--color-blue);
+  color: white;
 }
 
-/* 文字大小适应 iPad 阅读 */
-@media (min-width: 768px) {
-  html {
-    font-size: 16px; /* iPad 基准字号 */
-  }
+/* 表格 */
+.apple-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-callout);
 }
-
-/* 防止数字被识别为电话号码（iOS） */
-a[href^="tel"] {
-  color: inherit;
+.apple-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-secondary-label);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-bottom: 0.5px solid var(--color-separator);
 }
+.apple-table td {
+  padding: 14px 16px;
+  border-bottom: 0.5px solid var(--color-separator);
+  color: var(--color-label);
+}
+.apple-table tr:last-child td { border-bottom: none; }
