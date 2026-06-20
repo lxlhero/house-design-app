@@ -29,19 +29,24 @@ logger.info(f"Agent using Hermes key: {'yes' if LLM_KEY else 'no'}")
 
 SYSTEM_PROMPT = """你是装修管家小美，帮一位妈妈管理嘉兴五层别墅（地上三层+地下两层）的装修。
 
-核心能力：
-- 你可以通过工具查看和修改预算、采购项状态、装修阶段进度
-- 看到用户想改数据时，主动调用工具（不用问确认，直接执行）
-- 工具执行后，用温暖简洁的语气告知结果
+⚠️ 重要规则（最高优先级）：
+当用户提到任何涉及数据的操作（购买、下单、花费、花了、买了、更新、修改、改成、改预算、记录...），
+你必须立即调用对应的工具函数来实际操作数据库，不能只回复文字。
+例如：用户说「中央空调花了5万」→ 你必须调用 search_items + update_item_supplier + update_item_status
 
-风格要求：
-- 亲切温暖，像家人一样可靠
-- 每次 3-5 句话，加适当 emoji
-- 装修术语要通俗解释
-- 主动提醒关键节点和容易忽略的细节"""
+可用工具：
+- search_items：查找采购项
+- update_item_budget：修改预算
+- update_item_status：修改状态（未开始/已下单/已支付/已到货/已安装/已完成）
+- update_item_supplier：记录实际花费、供应商
+- get_budget_summary：查看预算总览
+- get_phase_status：查看阶段进度
+- update_total_budget：修改总预算
+
+回复风格：亲切温暖，每次 2-4 句话，加适当 emoji。工具执行完后简单告知结果即可。"""
 
 
-async def _stream_llm(messages: list[dict], include_tools: bool = True):
+async def _stream_llm(messages: list[dict], include_tools: bool = True, force_tools: bool = False):
     """流式调用 DeepSeek API，返回逐行 SSE 数据"""
     payload = {
         "model": LLM_MODEL,
@@ -52,7 +57,7 @@ async def _stream_llm(messages: list[dict], include_tools: bool = True):
     }
     if include_tools:
         payload["tools"] = TOOLS
-        payload["tool_choice"] = "auto"
+        payload["tool_choice"] = "required" if force_tools else "auto"
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         async with client.stream(
@@ -82,8 +87,16 @@ async def stream_chat(message: str, history: list[dict], db=None):
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     if history:
-        messages.extend(history[-20:])
+        messages.extend(history[-10:])  # 限制历史长度，避免工具指令被淹没
     messages.append({"role": "user", "content": message})
+
+    # 检测是否需要强制工具调用
+    force_tools = any(kw in message for kw in [
+        '花了', '买了', '下单', '支付', '到货', '安装', '完成',
+        '改成', '修改', '更新', '改预算', '记录', '花费', '付了',
+        '多少钱', '预算', '多少万', '进度', '状态', '阶段',
+    ])
+    logger.info(f"Chat: msg={message[:50]}, history={len(history)}, force_tools={force_tools}")
 
     # ═══ 工具调用循环（最多 3 轮） ═══
     for round_num in range(3):
@@ -91,7 +104,7 @@ async def stream_chat(message: str, history: list[dict], db=None):
         content_buffer = ""
 
         try:
-            async for line in _stream_llm(messages, include_tools=True):
+            async for line in _stream_llm(messages, include_tools=True, force_tools=force_tools):
                 if not line.startswith("data: "):
                     continue
                 data_str = line[6:]
