@@ -24,7 +24,7 @@ async function request(url, options = {}) {
 export const api = {
   // Dashboard
   overview: () => request('/dashboard/overview'),
-  categories: () => request('/dashboard/categories'),
+  categories: (detail = false) => request(`/dashboard/categories${detail ? '?detail=true' : ''}`),
   phases: () => request('/dashboard/phases'),
   floors: () => request('/dashboard/floors'),
   importLogs: () => request('/dashboard/import-logs'),

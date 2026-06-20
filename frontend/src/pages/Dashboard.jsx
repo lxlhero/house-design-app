@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { api } from '../api'
-import { TrendingUp, Package, Wallet, ArrowDownToLine, Edit3, Check, X } from 'lucide-react'
+import { TrendingUp, Package, Wallet, ArrowDownToLine, Edit3, Check, X, ChevronDown, ChevronRight, ShoppingCart } from 'lucide-react'
 
 const COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#22c55e', '#14b8a6']
 
@@ -24,6 +24,24 @@ function StatCard({ icon: Icon, label, value, color }) {
   )
 }
 
+const STATUS_COLORS = {
+  '未开始': 'bg-zinc-100 text-zinc-500',
+  '已下单': 'bg-blue-50 text-blue-600',
+  '已支付': 'bg-amber-50 text-amber-600',
+  '已到货': 'bg-violet-50 text-violet-600',
+  '已安装': 'bg-emerald-50 text-emerald-600',
+  '已完成': 'bg-emerald-100 text-emerald-700',
+}
+
+const STATUS_DOTS = {
+  '未开始': '⬜',
+  '已下单': '📦',
+  '已支付': '💳',
+  '已到货': '🚚',
+  '已安装': '🔧',
+  '已完成': '✅',
+}
+
 export default function Dashboard() {
   const [overview, setOverview] = useState(null)
   const [categories, setCategories] = useState([])
@@ -33,13 +51,14 @@ export default function Dashboard() {
   const [error, setError] = useState(null)
   const [editingBudget, setEditingBudget] = useState(false)
   const [budgetInput, setBudgetInput] = useState('')
+  const [expandedCats, setExpandedCats] = useState({})
 
   useEffect(() => {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 15000) // 15秒超时
+    const timeout = setTimeout(() => controller.abort(), 15000)
 
     Promise.all([
-      api.overview(), api.categories(), api.phases(), api.floors()
+      api.overview(), api.categories(true), api.phases(), api.floors()
     ]).then(([ov, cat, ph, fl]) => {
       setOverview(ov)
       setCategories(cat)
@@ -58,12 +77,16 @@ export default function Dashboard() {
     })
   }, [])
 
+  const toggleCat = (id) => {
+    setExpandedCats(prev => ({ ...prev, [id]: !prev[id] }))
+  }
+
   const saveBudget = async () => {
-    const val = parseFloat(budgetInput) * 10000  // 用户输入的是"万"
+    const val = parseFloat(budgetInput) * 10000
     if (val > 0) {
       await api.updateBudget(val)
       const ov = await api.overview()
-      const cat = await api.categories()
+      const cat = await api.categories(true)
       setOverview(ov)
       setCategories(cat)
     }
@@ -111,7 +134,6 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {/* 可编辑的总预算 */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-zinc-100 flex items-center gap-4">
           <div className="w-11 h-11 rounded-lg flex items-center justify-center bg-indigo-500">
             <TrendingUp size={22} className="text-white" />
@@ -150,7 +172,6 @@ export default function Dashboard() {
 
       {/* Charts row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Pie: Budget by category */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-zinc-100">
           <h3 className="text-sm font-semibold text-zinc-700 mb-4">📊 预算分配</h3>
           <ResponsiveContainer width="100%" height={320}>
@@ -172,7 +193,6 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Pie: Status distribution */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-zinc-100">
           <h3 className="text-sm font-semibold text-zinc-700 mb-4">📋 状态分布</h3>
           <ResponsiveContainer width="100%" height={320}>
@@ -207,41 +227,108 @@ export default function Dashboard() {
         </ResponsiveContainer>
       </div>
 
-      {/* Budget categories table */}
+      {/* Budget categories — expandable table */}
       <div className="bg-white rounded-xl shadow-sm border border-zinc-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-zinc-100">
           <h3 className="text-sm font-semibold text-zinc-700">💰 预算大项明细</h3>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-zinc-100 bg-zinc-50/50 text-left text-xs text-zinc-400 uppercase">
-              <th className="px-5 py-3">预算大项</th>
-              <th className="px-5 py-3">控制预算</th>
-              <th className="px-5 py-3">占比</th>
-              <th className="px-5 py-3">采购时机</th>
-              <th className="px-5 py-3">优先级</th>
-              <th className="px-5 py-3">进度</th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.map(c => (
-              <tr key={c.id} className="border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors">
-                <td className="px-5 py-3 font-medium text-zinc-800">{c.name}</td>
-                <td className="px-5 py-3 text-zinc-600">{formatMoney(c.control_budget)}</td>
-                <td className="px-5 py-3 text-zinc-500">{(c.ratio * 100).toFixed(1)}%</td>
-                <td className="px-5 py-3 text-zinc-500">{c.purchase_timing}</td>
-                <td className="px-5 py-3">
-                  <span className={`inline-flex px-2 py-0.5 text-xs rounded-full font-medium ${
-                    c.priority === '最高' ? 'bg-red-50 text-red-600' :
-                    c.priority === '高' ? 'bg-amber-50 text-amber-600' :
-                    'bg-zinc-100 text-zinc-500'
-                  }`}>{c.priority}</span>
-                </td>
-                <td className="px-5 py-3 text-zinc-400">{c.items_completed}/{c.items_total}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          {categories.map((cat, idx) => {
+            const isExpanded = expandedCats[cat.id]
+            const catBudget = cat.control_budget
+            const catSpent = cat.actual_spent
+            const pct = catBudget > 0 ? Math.round(catSpent / catBudget * 100) : 0
+
+            return (
+              <div key={cat.id} className="border-b border-zinc-50">
+                {/* Category row (click to expand) */}
+                <button
+                  onClick={() => toggleCat(cat.id)}
+                  className="w-full flex items-center gap-3 px-5 py-3 hover:bg-zinc-50/50 transition-colors text-left"
+                >
+                  <span className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
+                    <ChevronRight size={14} className="text-zinc-400" />
+                  </span>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                  <span className="font-medium text-zinc-800 text-sm min-w-[80px]">{cat.name}</span>
+                  <div className="flex items-center gap-3 ml-auto text-xs">
+                    {/* Budget bar */}
+                    <div className="hidden md:flex items-center gap-2 min-w-[140px]">
+                      <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${pct > 90 ? 'bg-red-400' : pct > 50 ? 'bg-amber-400' : 'bg-emerald-400'}`}
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-zinc-500 w-8 text-right">{pct}%</span>
+                    </div>
+                    <span className="text-zinc-600 font-medium w-20 text-right">
+                      {formatMoney(catSpent)} / {formatMoney(catBudget)}
+                    </span>
+                    <span className="text-zinc-400 w-16 text-right">
+                      <span className="text-emerald-600">{cat.items_completed}</span>
+                      {cat.items_active > 0 && <span className="text-blue-500">+{cat.items_active}</span>}
+                      /{cat.items_total} 项
+                    </span>
+                    {cat.priority === '最高' && (
+                      <span className="text-[10px] bg-red-50 text-red-500 px-1.5 py-0.5 rounded-full font-medium">最高</span>
+                    )}
+                  </div>
+                </button>
+
+                {/* Expanded items */}
+                {isExpanded && cat.items && (
+                  <div className="bg-zinc-50/50 border-t border-zinc-100">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-zinc-100 text-left text-zinc-400">
+                          <th className="px-5 py-2 font-normal">采购项</th>
+                          <th className="px-2 py-2 font-normal hidden md:table-cell">空间</th>
+                          <th className="px-2 py-2 font-normal">预算</th>
+                          <th className="px-2 py-2 font-normal hidden md:table-cell">实际花费</th>
+                          <th className="px-2 py-2 font-normal">状态</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cat.items.map(item => (
+                          <tr key={item.id} className="border-b border-zinc-50/50">
+                            <td className="px-5 py-2">
+                              <div className="font-medium text-zinc-700">{item.item_name}</div>
+                              {item.notes && (
+                                <div className="text-[10px] text-zinc-400 mt-0.5 truncate max-w-[200px]">{item.notes}</div>
+                              )}
+                            </td>
+                            <td className="px-2 py-2 text-zinc-400 hidden md:table-cell">{item.floor_space}</td>
+                            <td className="px-2 py-2 text-zinc-600 font-medium">
+                              {formatMoney(item.control_budget)}
+                            </td>
+                            <td className="px-2 py-2 hidden md:table-cell">
+                              {item.actual_cost > 0 ? (
+                                <span className={item.actual_cost > item.control_budget ? 'text-red-500' : 'text-zinc-600'}>
+                                  {formatMoney(item.actual_cost)}
+                                </span>
+                              ) : (
+                                <span className="text-zinc-300">—</span>
+                              )}
+                            </td>
+                            <td className="px-2 py-2">
+                              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium ${STATUS_COLORS[item.status] || 'bg-zinc-100 text-zinc-500'}`}>
+                                {STATUS_DOTS[item.status] || ''} {item.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {cat.items.length === 0 && (
+                      <p className="text-xs text-zinc-400 text-center py-4">暂无采购项</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* Phases timeline */}

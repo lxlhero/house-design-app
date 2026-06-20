@@ -99,21 +99,46 @@ def update_budget(data: dict, db: Session = Depends(get_db), request: Request = 
 
 
 @router.get("/categories")
-def categories(db: Session = Depends(get_db)):
+def categories(detail: bool = False, db: Session = Depends(get_db)):
     cats = db.query(Category).order_by(Category.control_budget.desc()).all()
-    return [
-        {
+    result = []
+    for c in cats:
+        items = db.query(Item).filter(Item.category == c.name).order_by(
+            Item.control_budget.desc()
+        ).all()
+        items_total = len(items)
+        items_completed = sum(1 for i in items if i.status in ("已安装", "已完成"))
+        items_active = sum(1 for i in items if i.status in ("已下单", "已支付", "已到货"))
+
+        entry = {
             "id": c.id, "name": c.name,
             "control_budget": c.control_budget, "ratio": c.ratio,
             "purchase_timing": c.purchase_timing, "priority": c.priority,
-            "items_total": db.query(func.count(Item.id)).filter(Item.category == c.name).scalar() or 0,
-            "items_completed": db.query(func.count(Item.id))
-                .filter(Item.category == c.name, Item.status.in_(["已安装", "已下单"])).scalar() or 0,
-            "actual_spent": db.query(func.sum(Item.actual_cost))
-                .filter(Item.category == c.name).scalar() or 0,
+            "items_total": items_total,
+            "items_completed": items_completed,
+            "items_active": items_active,
+            "actual_spent": sum(i.actual_cost or 0 for i in items),
         }
-        for c in cats
-    ]
+        if detail:
+            entry["items"] = [
+                {
+                    "id": i.id,
+                    "item_name": i.item_name,
+                    "floor_space": i.floor_space,
+                    "control_budget": i.control_budget,
+                    "budget_min": i.budget_min,
+                    "budget_max": i.budget_max,
+                    "actual_cost": i.actual_cost,
+                    "status": i.status,
+                    "priority": i.priority,
+                    "phase": i.phase,
+                    "brand_recommendation": i.brand_recommendation,
+                    "notes": i.notes,
+                }
+                for i in items
+            ]
+        result.append(entry)
+    return result
 
 
 @router.get("/phases")
