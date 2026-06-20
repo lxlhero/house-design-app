@@ -105,7 +105,14 @@ function useSpeech(setInput) {
     }
   }, [listening])
 
-  return { listening, supported, toggle }
+  const reset = useCallback(() => {
+    manualStop.current = true
+    try { recRef.current?.stop() } catch {}
+    finalText.current = ''
+    setListening(false)
+  }, [])
+
+  return { listening, supported, toggle, reset }
 }
 
 export default function AgentChat() {
@@ -117,7 +124,7 @@ export default function AgentChat() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const messagesEnd = useRef(null)
   const inputRef = useRef(null)
-  const { listening, supported, toggle: toggleMic } = useSpeech(setInput)
+  const { listening, supported, toggle: toggleMic, reset: resetSpeech } = useSpeech(setInput)
 
   const active = sessions.find(s => s.id === activeId) || null
   const messages = active?.messages || []
@@ -148,6 +155,7 @@ export default function AgentChat() {
   const sendMessage = async () => {
     const text = input.trim()
     if (!text || streaming || !activeId) return
+    resetSpeech()  // 停止语音 + 清空缓冲区，防止残留文本回写
     setInput(''); setError(null)
 
     const userMsg = { role: 'user', content: text }
