@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Clock } from 'lucide-react'
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Clock, Download } from 'lucide-react'
 
 export default function Import() {
   const [file, setFile] = useState(null)
@@ -34,7 +34,14 @@ export default function Import() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h2 className="text-2xl font-bold text-zinc-800">导入数据</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-zinc-800">导入数据</h2>
+          <a href="/api/export/inventory" download
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition-colors">
+            <Download size={16} />
+            下载最新 Excel
+          </a>
+        </div>
         <p className="text-sm text-zinc-500 mt-1">上传新版 Excel 全量替换数据库（清空 → 重新导入，Excel 为唯一真相源）</p>
       </div>
 

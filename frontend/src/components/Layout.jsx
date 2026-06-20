@@ -25,7 +25,7 @@ export default function Layout() {
   const navItems = [
     { to: '/', icon: Home, label: '仪表盘' },
     { to: '/items', icon: Package, label: '采购清单' },
-    { to: '/import', icon: Upload, label: '导入数据' },
+    { to: '/import',   icon: Upload,     label: '导入导出' },
     { to: '/floorplan', icon: LayoutGrid, label: '3D户型 🚧' },
     { to: '/agent',     icon: Bot,        label: 'Hermes' },
   ]

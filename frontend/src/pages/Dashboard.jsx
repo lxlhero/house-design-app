@@ -288,13 +288,15 @@ export default function Dashboard() {
                     ))}
                     {isCurrent && (
                       <button
-                        onClick={async () => {
-                          await api.advancePhase(p.id)
-                          const ps = await api.phases()
-                          setPhases(ps)
-                        }}
+                        onClick={async () => { await api.advancePhase(p.id); setPhases(await api.phases()) }}
                         className="text-[10px] bg-indigo-500 text-white px-2 py-1 rounded-full hover:bg-indigo-600 transition-colors ml-auto"
-                      >✅ 标记完成</button>
+                      >✅ 完成</button>
+                    )}
+                    {isCompleted && (
+                      <button
+                        onClick={async () => { await api.rollbackPhase(p.id); setPhases(await api.phases()) }}
+                        className="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-full hover:bg-amber-200 transition-colors ml-auto"
+                      >↩ 回退</button>
                     )}
                   </div>
                 </div>

@@ -64,4 +64,8 @@ export const api = {
 
   // Phase advancement
   advancePhase: (id) => request(`/dashboard/phases/${id}/advance`, { method: 'PATCH' }),
+  rollbackPhase: (id) => request(`/dashboard/phases/${id}/rollback`, { method: 'PATCH' }),
+
+  // Excel download
+  downloadExcel: () => `${API}/export/excel`,
 }

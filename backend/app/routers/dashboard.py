@@ -160,6 +160,25 @@ def advance_phase(phase_id: int, db: Session = Depends(get_db)):
     }
 
 
+@router.patch("/phases/{phase_id}/rollback")
+def rollback_phase(phase_id: int, db: Session = Depends(get_db)):
+    """回退阶段：撤销完成状态，回到此阶段"""
+    p = db.query(Phase).filter(Phase.id == phase_id).first()
+    if not p:
+        return {"error": "阶段不存在"}
+
+    # 将此阶段及之后所有阶段重置
+    db.query(Phase).filter(
+        Phase.phase_num >= p.phase_num
+    ).update({"status": "upcoming"})
+
+    # 设置为 current
+    p.status = "current"
+    db.commit()
+
+    return {"ok": True, "current": p.name}
+
+
 @router.get("/floors")
 def floors(db: Session = Depends(get_db)):
     fs = db.query(FloorBudget).all()
