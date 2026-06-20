@@ -60,7 +60,7 @@ export default function AgentChat() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const messagesEnd = useRef(null)
   const inputRef = useRef(null)
-  const { listening, supported, toggleMic } = useSpeech(setInput)
+  const { listening, supported, toggle: toggleMic } = useSpeech(setInput)
 
   const active = sessions.find(s => s.id === activeId) || null
   const messages = active?.messages || []
