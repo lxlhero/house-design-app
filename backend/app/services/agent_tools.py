@@ -112,6 +112,20 @@ TOOLS = [
             }
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "reset_all_data",
+            "description": "重置所有采购项到初始状态（未开始、花费归零），重置所有阶段为未开始（仅阶段0设为进行中）。用于妈妈要求「清理测试数据」「恢复初始状态」时。会清除所有已下单/已支付/已安装的状态和花费记录。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "confirm": {"type": "boolean", "description": "必须为 true 才执行，防止误操作"}
+                },
+                "required": ["confirm"]
+            }
+        }
+    }
 ]
 
 
@@ -148,6 +162,8 @@ def execute_tool(name: str, args: dict) -> str:
             return _get_phase_status(db)
         elif name == "update_total_budget":
             return _update_total_budget(db, args)
+        elif name == "reset_all_data":
+            return _reset_all_data(db, args)
         else:
             return f"❌ 未知工具: {name}"
     except Exception as e:
@@ -270,3 +286,41 @@ def _update_total_budget(db: Session, args: dict) -> str:
         db.add(BudgetConfig(key="total_budget", value=amount))
     db.commit()
     return f"✅ 总预算已更新：{old:,.0f} → {amount:,.0f} 元"
+
+
+def _reset_all_data(db: Session, args: dict) -> str:
+    """重置所有数据到初始状态"""
+    confirm = args.get("confirm", False)
+    if not confirm:
+        return "❌ 请确认要重置所有数据（confirm=true）"
+
+    # 重置所有采购项
+    items_count = db.query(Item).count()
+    db.query(Item).update({
+        "status": "未开始",
+        "actual_cost": 0,
+        "actual_paid": 0,
+        "supplier": None,
+        "supplier_contact": None,
+        "notes": None,
+    })
+
+    # 重置所有阶段
+    phases = db.query(Phase).order_by(Phase.phase_num).all()
+    for p in phases:
+        p.status = "upcoming"
+    # 阶段 0 设为进行中
+    first_phase = db.query(Phase).filter(Phase.phase_num == 0).first()
+    if first_phase:
+        first_phase.status = "current"
+
+    db.commit()
+
+    # 同步到 Excel
+    try:
+        sync_db_to_excel(db)
+        excel_status = "已同步 Excel"
+    except Exception as e:
+        excel_status = f"Excel 同步失败: {e}"
+
+    return f"✅ 已重置 {items_count} 个采购项 → 未开始，所有花费归零。阶段重置为初始状态（阶段0=进行中）。{excel_status}"

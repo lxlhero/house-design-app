@@ -31,23 +31,80 @@ async function generateSessionTitle(text, sessionId, setSessions) {
 function useSpeech(setInput) {
   const [listening, setListening] = useState(false)
   const [supported, setSupported] = useState(false)
-  const ref = useRef(null)
+  const recRef = useRef(null)
+  const manualStop = useRef(false)  // 区分手动停止 vs 超时
+  const finalText = useRef('')      // 累积最终识别结果
+
+  const createRec = () => {
+    const R = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!R) return null
+    const r = new R()
+    r.lang = 'zh-CN'
+    r.interimResults = true
+    r.continuous = true             // 持续监听，不会说完一句就停
+    // Safari 默认 5-8s 静默超时，通过重启解决
+    r.onresult = e => {
+      let interim = ''
+      let final = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript
+        if (e.results[i].isFinal) {
+          final += t
+        } else {
+          interim += t
+        }
+      }
+      if (final) finalText.current += final
+      setInput(finalText.current + interim)
+    }
+    r.onend = () => {
+      // 手动停止 → 不重启
+      if (manualStop.current) {
+        setListening(false)
+        return
+      }
+      // 超时/自动停止 → 重启识别
+      try { recRef.current?.start() } catch {}
+    }
+    r.onerror = (e) => {
+      // 'no-speech' 或 'aborted' 不提示，静默重试
+      if (e.error === 'aborted' || e.error === 'no-speech') {
+        if (!manualStop.current) {
+          try { recRef.current?.start() } catch {}
+        }
+        return
+      }
+      setListening(false)
+    }
+    return r
+  }
 
   useEffect(() => {
-    const R = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!R) return
-    setSupported(true)
-    const r = new R()
-    r.lang = 'zh-CN'; r.interimResults = true; r.continuous = false
-    r.onresult = e => { let t = ''; for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; setInput(t) }
-    r.onend = () => setListening(false)
-    r.onerror = () => setListening(false)
-    ref.current = r
+    const r = createRec()
+    if (r) {
+      setSupported(true)
+      recRef.current = r
+    }
+    return () => {
+      manualStop.current = true
+      try { recRef.current?.stop() } catch {}
+    }
   }, [])
+
   const toggle = useCallback(() => {
-    if (!ref.current) return
-    listening ? ref.current.stop() : (setListening(true), ref.current.start())
+    if (!recRef.current) return
+    if (listening) {
+      manualStop.current = true
+      recRef.current.stop()
+      setListening(false)
+    } else {
+      finalText.current = ''
+      manualStop.current = false
+      setListening(true)
+      try { recRef.current.start() } catch {}
+    }
   }, [listening])
+
   return { listening, supported, toggle }
 }
 
