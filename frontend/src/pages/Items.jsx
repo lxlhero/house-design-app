@@ -151,45 +151,58 @@ export default function Items() {
   )
 
   return (
-    <div className="space-y-xl max-w-[1400px] animate-in">
-      <div className="flex items-center justify-between flex-wrap gap-md">
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
         <div>
-          <p className="text-label text-text-secondary uppercase tracking-wider mb-sm">采购管理</p>
-          <h1 className="text-hero font-bold text-text tracking-tight"
-            style={{ letterSpacing: 'var(--text-hero--letter-spacing)', lineHeight: 'var(--text-hero--line-height)' }}>
-            采购清单
-          </h1>
-          <p className="text-callout text-text-secondary mt-sm">
+          <h2 className="text-2xl font-bold text-zinc-800">采购清单</h2>
+          <p className="text-sm text-zinc-500 mt-1">
             共 {total} 项 · {items.filter(i => i.status !== '未开始').length} 项已启动
             {itemsWithActual > 0 && ` · ${itemsWithActual} 项已录入实际花费`}
           </p>
         </div>
-        <a href="/api/export/excel" download
-          className="btn-primary inline-flex">
-          <Download size={16} strokeWidth={2} />
-          <span className="ml-sm">导出 Excel</span>
+        <a
+          href="/api/export/excel"
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition-colors shadow-sm"
+          download
+        >
+          <Download size={16} />
+          导出 Excel
         </a>
       </div>
 
-      {/* 预算汇总 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-md">
-        {[
-          { label: '预算总额', value: formatMoney(apiTotalBudget), color: '#0066CC' },
-          { label: '实际花费', value: totalActual > 0 ? formatMoney(totalActual) : '待录入', color: totalActual > 0 ? '#FF9500' : '#C7C7CC' },
-          { label: '预算余额', value: formatMoney(Math.abs(apiBudgetRemaining)), color: apiBudgetRemaining >= 0 ? '#34C759' : '#FF3B30' },
-          { label: '花费占比', value: totalActual > 0 ? `${((totalActual / apiTotalBudget) * 100).toFixed(1)}%` : '-', color: totalActual > 0 ? '#AF52DE' : '#C7C7CC' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="glass-card-static p-lg text-center">
-            <p className="text-label text-text-secondary uppercase tracking-wider mb-1">{label}</p>
-            <p className="stat-number" style={{ color }}>{value}</p>
+      {/* Budget vs Actual summary bar */}
+      <div className="grid grid-cols-4 gap-3">
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-zinc-100 text-center">
+          <div className="text-xs text-zinc-400 mb-1">预算总额</div>
+          <div className="text-lg font-bold text-zinc-700">{formatMoney(apiTotalBudget)}</div>
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-zinc-100 text-center">
+          <div className="text-xs text-zinc-400 mb-1">实际花费</div>
+          <div className={`text-lg font-bold ${totalActual > 0 ? 'text-amber-600' : 'text-zinc-400'}`}>
+            {totalActual > 0 ? formatMoney(totalActual) : '待录入'}
           </div>
-        ))}
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-zinc-100 text-center">
+          <div className="text-xs text-zinc-400 mb-1">预算余额</div>
+          <div className={`text-lg font-bold flex items-center justify-center gap-1 ${
+            apiBudgetRemaining >= 0 ? 'text-emerald-600' : 'text-red-600'
+          }`}>
+            {apiBudgetRemaining >= 0 ? <TrendingDown size={16} /> : <TrendingUp size={16} />}
+            {formatMoney(Math.abs(apiBudgetRemaining))}
+          </div>
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow-sm border border-zinc-100 text-center">
+          <div className="text-xs text-zinc-400 mb-1">花费占比</div>
+          <div className={`text-lg font-bold ${totalActual > 0 ? 'text-indigo-600' : 'text-zinc-400'}`}>
+            {totalActual > 0 ? `${((totalActual / apiTotalBudget) * 100).toFixed(1)}%` : '-'}
+          </div>
+        </div>
       </div>
 
       {/* Search & filters */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-zinc-100 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-[384px]">
+          <div className="relative flex-1 max-w-sm">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}

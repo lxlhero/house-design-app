@@ -1,344 +1,50 @@
 @import "tailwindcss";
 
-/* ═══════════════════════════════════════════
-   装修管家 · Premium Design System
-   融合 Apple HIG + Linear 精密美学
-   亮色为主，玻璃质感，iPad 专属交互
-   ═══════════════════════════════════════════ */
+/* ── iPad 触摸优化 ── */
 
-@theme {
-  /* ── 颜色 · 暖色精致调色板 ── */
-  --color-accent: #0066CC;
-  --color-accent-hover: #004999;
-  --color-accent-light: #E8F4FD;
-
-  --color-surface: #FFFFFF;
-  --color-surface-hover: #F5F5F7;
-  --color-surface-elevated: #FAFAFA;
-
-  --color-bg: #F2F2F4;
-  --color-bg-alt: #EDEDEF;
-
-  --color-text: #1D1D1F;
-  --color-text-secondary: #86868B;
-  --color-text-tertiary: #AEAEB2;
-
-  --color-border: rgba(0,0,0,0.06);
-  --color-border-strong: rgba(0,0,0,0.10);
-  --color-separator: rgba(0,0,0,0.05);
-
-  --color-red: #FF3B30;
-  --color-orange: #FF9500;
-  --color-green: #34C759;
-  --color-teal: #5AC8FA;
-
-  /* ── 圆角 · Apple 精密刻度 ── */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
-  --radius-full: 9999px;
-
-  /* ── 间距 ── */
-  --spacing-xs: 6px;
-  --spacing-sm: 10px;
-  --spacing-md: 16px;
-  --spacing-lg: 22px;
-  --spacing-xl: 28px;
-  --spacing-2xl: 36px;
-  --spacing-3xl: 48px;
-
-  /* ── 阴影 · Apple 柔光 ── */
-  --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.03);
-  --shadow-md: 0 4px 12px 0 rgba(0,0,0,0.04), 0 1px 2px 0 rgba(0,0,0,0.02);
-  --shadow-lg: 0 8px 30px 0 rgba(0,0,0,0.06), 0 2px 8px 0 rgba(0,0,0,0.03);
-  --shadow-xl: 0 20px 60px 0 rgba(0,0,0,0.08);
-
-  /* ── 字体 · SF Pro 精密层次 ── */
-  --text-hero: 2.5rem;
-  --text-hero--line-height: 1.08;
-  --text-hero--letter-spacing: -0.022em;
-
-  --text-title: 1.75rem;
-  --text-title--line-height: 1.14;
-  --text-title--letter-spacing: -0.018em;
-
-  --text-heading: 1.25rem;
-  --text-heading--line-height: 1.20;
-  --text-heading--letter-spacing: -0.012em;
-
-  --text-body: 1rem;
-  --text-body--line-height: 1.47;
-  --text-body--letter-spacing: -0.011em;
-
-  --text-callout: 0.9375rem;
-  --text-callout--line-height: 1.40;
-  --text-callout--font-weight: 500;
-
-  --text-caption: 0.8125rem;
-  --text-caption--line-height: 1.35;
-  --text-caption--letter-spacing: -0.004em;
-
-  --text-label: 0.75rem;
-  --text-label--line-height: 1.30;
-  --text-label--letter-spacing: 0.02em;
-  --text-label--font-weight: 600;
+/* 最小触摸目标 44pt（Apple HIG） */
+button, a, input, select, textarea, [role="button"], .clickable {
+  min-height: 44px;
+  min-width: 44px;
 }
 
-/* ═══════════════════════════════════════════
-   Base
-   ═══════════════════════════════════════════ */
-
+/* iOS PWA 安全区域（避开刘海/底部指示条） */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
-  font-size: var(--text-body);
-  line-height: var(--text-body--line-height);
-  letter-spacing: var(--text-body--letter-spacing);
-  color: var(--color-text);
-  background: var(--color-bg);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   -webkit-overflow-scrolling: touch;
 }
 
-::selection { background: var(--color-accent-light); color: var(--color-accent); }
-
-/* ── iPad 触摸 ── */
-button, a, [role="button"], input, select, textarea {
-  min-height: 44px; min-width: 44px;
+/* 防止 iOS 双击缩放 */
+button, a {
   touch-action: manipulation;
 }
 
-/* ── 滚动条 ── */
-::-webkit-scrollbar { width: 3px; height: 3px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 3px; }
-
-/* ═══════════════════════════════════════════
-   玻璃质感卡片（Premium 核心）
-   ═══════════════════════════════════════════ */
-
-.glass-card {
-  background: rgba(255,255,255,0.72);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 0.5px solid rgba(0,0,0,0.06);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
-}
-.glass-card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-1px);
+/* 表格横向滚动优化 */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  -webkit-transform: translateZ(0); /* GPU 加速 */
 }
 
-.glass-card-static {
-  background: rgba(255,255,255,0.72);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 0.5px solid rgba(0,0,0,0.06);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
+.table-wrapper table {
+  min-width: 600px; /* iPad 9.7" 的舒适阅读宽度 */
 }
 
-/* ── 导航毛玻璃（Apple 标志手法） ── */
-.glass-nav {
-  background: rgba(242,242,244,0.70);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
+/* 卡片/布局间距适配 iPad */
+@media (min-width: 768px) {
+  .card-grid {
+    gap: 1rem;
+  }
 }
 
-/* ═══════════════════════════════════════════
-   按钮
-   ═══════════════════════════════════════════ */
-
-.btn-primary {
-  display: inline-flex; align-items: center; justify-content: center;
-  background: var(--color-accent);
-  color: white;
-  font-size: var(--text-callout); font-weight: 600;
-  padding: 12px 22px;
-  border-radius: var(--radius-full);
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  letter-spacing: -0.01em;
-}
-.btn-primary:hover { background: var(--color-accent-hover); }
-.btn-primary:active { transform: scale(0.97); opacity: 0.9; }
-.btn-primary:disabled { opacity: 0.35; cursor: default; transform: none; }
-
-.btn-secondary {
-  display: inline-flex; align-items: center; justify-content: center;
-  background: var(--color-surface);
-  color: var(--color-accent);
-  font-size: var(--text-callout); font-weight: 600;
-  padding: 12px 22px;
-  border-radius: var(--radius-full);
-  border: 0.5px solid var(--color-border-strong);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.btn-secondary:hover { background: var(--color-surface-hover); }
-.btn-secondary:active { transform: scale(0.97); }
-
-/* ── 幽灵按钮（导航/操作） ── */
-.btn-ghost {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--text-caption); font-weight: 500;
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.btn-ghost:hover { background: rgba(0,0,0,0.04); color: var(--color-text); }
-
-/* ═══════════════════════════════════════════
-   输入框
-   ═══════════════════════════════════════════ */
-
-.input-premium {
-  width: 100%;
-  background: var(--color-surface-elevated);
-  border: 0.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 13px 16px;
-  font-size: var(--text-callout);
-  color: var(--color-text);
-  transition: all 0.2s ease;
-  outline: none;
-}
-.input-premium:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-light);
-  background: var(--color-surface);
-}
-.input-premium::placeholder { color: var(--color-text-tertiary); }
-
-/* ═══════════════════════════════════════════
-   表格
-   ═══════════════════════════════════════════ */
-
-.table-premium {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-callout);
-}
-.table-premium th {
-  text-align: left;
-  padding: 11px 18px;
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: var(--text-label--letter-spacing);
-  border-bottom: 0.5px solid var(--color-separator);
-}
-.table-premium td {
-  padding: 13px 18px;
-  border-bottom: 0.5px solid var(--color-separator);
-  color: var(--color-text);
-}
-.table-premium tbody tr { transition: background 0.12s ease; }
-.table-premium tbody tr:hover { background: var(--color-surface-hover); }
-.table-premium tbody tr:last-child td { border-bottom: none; }
-
-/* ═══════════════════════════════════════════
-   徽章
-   ═══════════════════════════════════════════ */
-
-.badge {
-  display: inline-flex; align-items: center;
-  padding: 3px 10px;
-  font-size: var(--text-label); font-weight: 600;
-  letter-spacing: var(--text-label--letter-spacing);
-  border-radius: var(--radius-full);
-  background: var(--color-border);
-  color: var(--color-text-secondary);
-}
-.badge-accent { background: var(--color-accent-light); color: var(--color-accent); }
-.badge-danger { background: rgba(255,59,48,0.10); color: var(--color-red); }
-.badge-warning { background: rgba(255,149,0,0.10); color: var(--color-orange); }
-.badge-success { background: rgba(52,199,89,0.10); color: var(--color-green); }
-
-/* ═══════════════════════════════════════════
-   统计数字（动态感）
-   ═══════════════════════════════════════════ */
-
-.stat-number {
-  font-size: var(--text-title);
-  font-weight: 700;
-  letter-spacing: var(--text-title--letter-spacing);
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
+/* 文字大小适应 iPad 阅读 */
+@media (min-width: 768px) {
+  html {
+    font-size: 16px; /* iPad 基准字号 */
+  }
 }
 
-/* ═══════════════════════════════════════════
-   进度条
-   ═══════════════════════════════════════════ */
-
-.progress-bar {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--color-border);
-  overflow: hidden;
+/* 防止数字被识别为电话号码（iOS） */
+a[href^="tel"] {
+  color: inherit;
 }
-.progress-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-  background: var(--color-accent);
-  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* ═══════════════════════════════════════════
-   动画
-   ═══════════════════════════════════════════ */
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(-4px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-.animate-in { animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.animate-in-delay-1 { animation-delay: 0.05s; }
-.animate-in-delay-2 { animation-delay: 0.10s; }
-.animate-in-delay-3 { animation-delay: 0.15s; }
-.animate-in-delay-4 { animation-delay: 0.20s; }
-
-/* ── 加载骨架屏 ── */
-.skeleton {
-  background: linear-gradient(90deg, var(--color-border) 25%, var(--color-surface-hover) 50%, var(--color-border) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-sm);
-}
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* ═══════════════════════════════════════════
-   iPad 布局优化
-   ═══════════════════════════════════════════ */
-
-@media (min-width: 1024px) {
-  /* 侧栏常驻显示 */
-  .sidebar-persistent { display: flex !important; }
-}
-
-/* iPad 横屏双列布局 */
-@media (min-width: 1024px) and (max-width: 1366px) {
-  .ipad-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-/* 移动端安全区域 */
-.safe-top { padding-top: env(safe-area-inset-top); }
-.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
