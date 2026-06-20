@@ -40,8 +40,7 @@
   --radius-2xl: 24px;
   --radius-full: 9999px;
 
-  /* ── 间距（仅用于 padding/margin/gap，注意: 会覆盖 max-w-*）
-     有冲突的 max-w 已在组件中用显式值 [px] 替代 ── */
+  /* ── 间距 ── */
   --spacing-xs: 6px;
   --spacing-sm: 10px;
   --spacing-md: 16px;
