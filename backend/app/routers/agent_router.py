@@ -1,9 +1,20 @@
-"""Hermes Agent SSE 端点 — 桥接本机 Hermes CLI"""
+"""Hermes Agent SSE 端点"""
 from fastapi import APIRouter, Request
-from fastapi.responses import StreamingResponse
-from ..services.agent import stream_chat
+from fastapi.responses import StreamingResponse, JSONResponse
+from ..services.agent import stream_chat, generate_title
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
+
+
+@router.post("/title")
+async def title(request: Request):
+    """根据首条消息生成对话标题（3-8字）"""
+    body = await request.json()
+    msg = body.get("message", "")
+    if not msg:
+        return JSONResponse({"title": "新对话"})
+    t = await generate_title(msg)
+    return JSONResponse({"title": t})
 
 
 @router.post("/chat")

@@ -11,6 +11,22 @@ function saveSessions(ss) {
   localStorage.setItem(STORE_KEY, JSON.stringify(ss))
 }
 
+// 用 AI 生成会话标题
+async function generateSessionTitle(text, sessionId, setSessions) {
+  try {
+    const token = localStorage.getItem('house_token') || ''
+    const resp = await fetch('/api/agent/title', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ message: text }),
+    })
+    if (resp.ok) {
+      const { title } = await resp.json()
+      setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, title } : s))
+    }
+  } catch {}
+}
+
 // ═══ 语音识别 ═══
 function useSpeech(setInput) {
   const [listening, setListening] = useState(false)
@@ -84,6 +100,10 @@ export default function AgentChat() {
       messages: [...s.messages, userMsg, agentMsg],
       title: s.messages.length === 0 ? text.slice(0, 20) : s.title,
     }))
+    // 首条消息 → 后台生成标题
+    if (messages.length === 0) {
+      generateSessionTitle(text, activeId, setSessions)
+    }
     setStreaming(true)
 
     try {

@@ -69,3 +69,30 @@ async def stream_chat(message: str, history: list[dict], db=None):
         yield f"data: {json.dumps({'error': f'连接失败: {str(e)[:100]}'})}\n\n"
 
     yield "data: [DONE]\n\n"
+
+
+async def generate_title(message: str) -> str:
+    """根据首条消息生成3-8字对话标题"""
+    if not LLM_KEY:
+        return message[:10] + ("…" if len(message) > 10 else "")
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                LLM_URL,
+                headers={"Authorization": f"Bearer {LLM_KEY}", "Content-Type": "application/json"},
+                json={
+                    "model": LLM_MODEL,
+                    "messages": [
+                        {"role": "system", "content": "用3到8个字回应，只输出标题本身，不加任何标点或解释。"},
+                        {"role": "user", "content": f"给这段对话起个标题：{message}"},
+                    ],
+                    "max_tokens": 20,
+                    "temperature": 0.3,
+                },
+            )
+            data = resp.json()
+            title = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            return title[:15] or message[:8] + "…"
+    except Exception:
+        return message[:10] + ("…" if len(message) > 10 else "")
