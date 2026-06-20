@@ -1,9 +1,12 @@
 """
 装修管家 · Hermes Agent 桥接
-直接使用 Hermes Agent 的 DeepSeek API key，调用同款模型。
+- 直接使用 Hermes Agent 的 DeepSeek API key，调用同款模型
+- 支持工具调用（function calling）：Agent 可以直接修改数据库
+- 流式返回，工具调用时静默执行后继续流式输出
 """
 import os, json, httpx
 from ..logging_config import get_logger
+from .agent_tools import TOOLS, set_db, execute_tool
 
 logger = get_logger("house_design.agent")
 
@@ -24,49 +27,158 @@ LLM_MODEL = "deepseek-chat"
 
 logger.info(f"Agent using Hermes key: {'yes' if LLM_KEY else 'no'}")
 
+SYSTEM_PROMPT = """你是装修管家小美，帮一位妈妈管理嘉兴五层别墅（地上三层+地下两层）的装修。
+
+核心能力：
+- 你可以通过工具查看和修改预算、采购项状态、装修阶段进度
+- 看到用户想改数据时，主动调用工具（不用问确认，直接执行）
+- 工具执行后，用温暖简洁的语气告知结果
+
+风格要求：
+- 亲切温暖，像家人一样可靠
+- 每次 3-5 句话，加适当 emoji
+- 装修术语要通俗解释
+- 主动提醒关键节点和容易忽略的细节"""
+
+
+async def _stream_llm(messages: list[dict], include_tools: bool = True):
+    """流式调用 DeepSeek API，返回逐行 SSE 数据"""
+    payload = {
+        "model": LLM_MODEL,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 1024,
+        "stream": True,
+    }
+    if include_tools:
+        payload["tools"] = TOOLS
+        payload["tool_choice"] = "auto"
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        async with client.stream(
+            "POST", LLM_URL,
+            headers={"Authorization": f"Bearer {LLM_KEY}", "Content-Type": "application/json"},
+            json=payload,
+        ) as resp:
+            if resp.status_code != 200:
+                body = await resp.aread()
+                raise Exception(f"AI 服务异常 ({resp.status_code}): {body[:200]}")
+
+            async for line in resp.aiter_lines():
+                yield line
+
 
 async def stream_chat(message: str, history: list[dict], db=None):
-    """调用 DeepSeek API（复用 Hermes 的 key），流式返回"""
-
-    system = """你是装修管家小美。一位妈妈在嘉兴装修五层别墅（总预算120万，52个采购项，当前未开工）。
-用温暖亲切的语气回复，每次3-5句话，加适当emoji。她不太懂装修术语，请你通俗解释。"""
-
-    messages = [{"role": "system", "content": system}]
-    if history:
-        messages.extend(history[-10:])
-    messages.append({"role": "user", "content": message})
+    """流式对话 + 工具调用循环（最多 3 轮工具调用）"""
 
     if not LLM_KEY:
         yield f"data: {json.dumps({'error': '未配置DeepSeek API key，请检查 ~/.hermes/profiles/mom/.env'})}\n\n"
         yield "data: [DONE]\n\n"
         return
 
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            async with client.stream(
-                "POST", LLM_URL,
-                headers={"Authorization": f"Bearer {LLM_KEY}", "Content-Type": "application/json"},
-                json={"model": LLM_MODEL, "messages": messages, "stream": True, "temperature": 0.7, "max_tokens": 512},
-            ) as resp:
-                if resp.status_code != 200:
-                    body = await resp.aread()
-                    yield f"data: {json.dumps({'error': f'AI服务异常({resp.status_code})'})}\n\n"
-                    yield "data: [DONE]\n\n"
-                    return
+    # 设置 DB 供 tool 使用
+    if db:
+        set_db(db)
 
-                async for line in resp.aiter_lines():
-                    if line.startswith("data: "):
-                        data = line[6:]
-                        if data == "[DONE]": break
-                        try:
-                            chunk = json.loads(data)
-                            text = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
-                            if text:
-                                yield f"data: {json.dumps({'text': text})}\n\n"
-                        except json.JSONDecodeError:
-                            continue
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    if history:
+        messages.extend(history[-20:])
+    messages.append({"role": "user", "content": message})
+
+    # ═══ 工具调用循环（最多 3 轮） ═══
+    for round_num in range(3):
+        tool_calls_buffer = []  # [{id, name, arguments}]
+        content_buffer = ""
+
+        try:
+            async for line in _stream_llm(messages, include_tools=True):
+                if not line.startswith("data: "):
+                    continue
+                data_str = line[6:]
+                if data_str == "[DONE]":
+                    break
+
+                try:
+                    chunk = json.loads(data_str)
+                    delta = chunk.get("choices", [{}])[0].get("delta", {})
+
+                    text = delta.get("content", "")
+                    if text:
+                        content_buffer += text
+                        yield f"data: {json.dumps({'text': text})}\n\n"
+
+                    for tc in delta.get("tool_calls", []):
+                        idx = tc.get("index", 0)
+                        while len(tool_calls_buffer) <= idx:
+                            tool_calls_buffer.append({"id": "", "name": "", "arguments": ""})
+                        if "id" in tc:
+                            tool_calls_buffer[idx]["id"] = tc["id"]
+                        func = tc.get("function", {})
+                        if "name" in func:
+                            tool_calls_buffer[idx]["name"] = func["name"]
+                        if "arguments" in func:
+                            tool_calls_buffer[idx]["arguments"] += func["arguments"]
+
+                except json.JSONDecodeError:
+                    continue
+
+        except Exception as e:
+            yield f"data: {json.dumps({'error': f'连接失败: {str(e)[:100]}'})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+
+        # ── 没有工具调用 → 对话结束 ──
+        if not tool_calls_buffer:
+            yield "data: [DONE]\n\n"
+            return
+
+        # ── 有工具调用 → 添加 assistant 消息到历史 ──
+        assistant_msg = {"role": "assistant", "content": content_buffer or None, "tool_calls": []}
+        for tc in tool_calls_buffer:
+            if tc["name"]:
+                assistant_msg["tool_calls"].append({
+                    "id": tc["id"],
+                    "type": "function",
+                    "function": {"name": tc["name"], "arguments": tc["arguments"]}
+                })
+        messages.append(assistant_msg)
+
+        # ── 执行工具并添加结果 ──
+        for tc in tool_calls_buffer:
+            if not tc["name"]:
+                continue
+            try:
+                args = json.loads(tc["arguments"]) if tc["arguments"] else {}
+            except json.JSONDecodeError:
+                args = {}
+
+            result = execute_tool(tc["name"], args)
+            logger.info(f"Tool: {tc['name']} → {result[:100]}")
+
+            yield f"data: {json.dumps({'tool': tc['name'], 'result': result[:200]})}\n\n"
+
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc["id"],
+                "content": result
+            })
+
+        # ── 继续循环，LLM 将基于工具结果生成最终回复 ──
+
+    # 最终兜底（理论上不会到这里）
+    try:
+        async for line in _stream_llm(messages, include_tools=False):
+            if not line.startswith("data: ") or line[6:] == "[DONE]":
+                continue
+            try:
+                chunk = json.loads(line[6:])
+                text = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                if text:
+                    yield f"data: {json.dumps({'text': text})}\n\n"
+            except json.JSONDecodeError:
+                continue
     except Exception as e:
-        yield f"data: {json.dumps({'error': f'连接失败: {str(e)[:100]}'})}\n\n"
+        yield f"data: {json.dumps({'error': f'生成失败: {str(e)[:100]}'})}\n\n"
 
     yield "data: [DONE]\n\n"
 

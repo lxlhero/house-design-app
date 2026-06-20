@@ -1,6 +1,8 @@
-"""Hermes Agent SSE 端点"""
-from fastapi import APIRouter, Request
+"""Hermes Agent SSE 端点（带工具调用能力）"""
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import StreamingResponse, JSONResponse
+from sqlalchemy.orm import Session
+from ..database import get_db
 from ..services.agent import stream_chat, generate_title
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
@@ -18,13 +20,14 @@ async def title(request: Request):
 
 
 @router.post("/chat")
-async def chat(request: Request):
+async def chat(request: Request, db: Session = Depends(get_db)):
+    """流式对话 — Agent 可以调用工具修改数据库"""
     body = await request.json()
     message = body.get("message", "")
     history = body.get("history", [])
 
     async def event_stream():
-        async for chunk in stream_chat(message, history):
+        async for chunk in stream_chat(message, history, db=db):
             yield chunk
 
     return StreamingResponse(

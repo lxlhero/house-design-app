@@ -132,6 +132,18 @@ export default function AgentChat() {
           try {
             const p = JSON.parse(d)
             if (p.error) setError(p.error)
+            else if (p.tool) {
+              // 工具执行反馈：在助手消息末尾追加一行提示
+              const toolEmoji = { search_items: '🔍', update_item_budget: '💰', update_item_status: '📋', update_item_supplier: '📝', get_budget_summary: '📊', get_phase_status: '📅', update_total_budget: '💵' }
+              updateActive(s => {
+                const msgs = [...s.messages]
+                const last = msgs[msgs.length - 1]
+                if (last?.role === 'assistant') {
+                  last.content += `\n\n${toolEmoji[p.tool] || '⚙️'} 已执行操作`
+                }
+                return { ...s, messages: msgs }
+              })
+            }
             else if (p.text) {
               updateActive(s => {
                 const msgs = [...s.messages]
