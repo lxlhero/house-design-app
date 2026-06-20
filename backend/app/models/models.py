@@ -54,6 +54,7 @@ class Phase(Base):
     dont_buy_early = Column(Text, comment="不能买早")
     check_points = Column(Text, comment="验收重点")
     related_categories = Column(Text, comment="关联预算大项")
+    status = Column(String(20), default="upcoming", comment="upcoming/current/completed")
     created_at = Column(DateTime, server_default=func.now())
 
 

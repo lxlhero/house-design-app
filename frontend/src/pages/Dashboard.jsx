@@ -247,35 +247,59 @@ export default function Dashboard() {
       {/* Phases timeline */}
       <div className="bg-white rounded-xl shadow-sm border border-zinc-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-zinc-100">
-          <h3 className="text-sm font-semibold text-zinc-700">📅 装修阶段（当前：阶段0 - 开工前）</h3>
+          <h3 className="text-sm font-semibold text-zinc-700">
+            📅 装修阶段
+            {(() => {
+              const cur = phases.find(p => p.status === 'current')
+              return cur ? `（当前：${cur.name}）` : ''
+            })()}
+          </h3>
         </div>
         <div className="p-5">
           <div className="relative">
-            {phases.map((p, i) => (
+            {phases.map((p, i) => {
+              const isCurrent = p.status === 'current'
+              const isCompleted = p.status === 'completed'
+              return (
               <div key={p.id} className="flex gap-4 pb-5 last:pb-0">
-                {/* Timeline dot */}
                 <div className="flex flex-col items-center">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                    i === 0 ? 'bg-indigo-500 ring-4 ring-indigo-100' : 'bg-zinc-300'
+                    isCompleted ? 'bg-emerald-500' :
+                    isCurrent ? 'bg-indigo-500 ring-4 ring-indigo-100' :
+                    'bg-zinc-300'
                   }`}>
-                    {p.phase_num}
+                    {isCompleted ? '✓' : p.phase_num}
                   </div>
-                  {i < phases.length - 1 && <div className="w-0.5 flex-1 bg-zinc-200 mt-1" />}
+                  {i < phases.length - 1 && (
+                    <div className={`w-0.5 flex-1 mt-1 ${isCompleted ? 'bg-emerald-200' : 'bg-zinc-200'}`} />
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className={`flex-1 min-w-0 ${isCompleted ? 'opacity-60' : ''}`}>
                   <div className="flex items-center gap-2">
                     <h4 className="text-sm font-semibold text-zinc-800">{p.name}</h4>
                     <span className="text-xs text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded">{p.month_range}</span>
+                    {isCompleted && <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">已完成</span>}
+                    {isCurrent && <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">进行中</span>}
                   </div>
                   <p className="text-xs text-zinc-500 mt-1 leading-relaxed">{p.core_tasks}</p>
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2 items-center">
                     {p.related_categories?.split(/[/,、]/).filter(Boolean).map(cat => (
                       <span key={cat} className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded">{cat.trim()}</span>
                     ))}
+                    {isCurrent && (
+                      <button
+                        onClick={async () => {
+                          await api.advancePhase(p.id)
+                          const ps = await api.phases()
+                          setPhases(ps)
+                        }}
+                        className="text-[10px] bg-indigo-500 text-white px-2 py-1 rounded-full hover:bg-indigo-600 transition-colors ml-auto"
+                      >✅ 标记完成</button>
+                    )}
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </div>

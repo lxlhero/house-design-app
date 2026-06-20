@@ -61,4 +61,7 @@ export const api = {
     method: 'PATCH',
     body: JSON.stringify({ total_budget: totalBudget }),
   }),
+
+  // Phase advancement
+  advancePhase: (id) => request(`/dashboard/phases/${id}/advance`, { method: 'PATCH' }),
 }

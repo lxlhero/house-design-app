@@ -123,9 +123,41 @@ def phases(db: Session = Depends(get_db)):
         {"id": p.id, "phase_num": p.phase_num, "name": p.name,
          "month_range": p.month_range, "core_tasks": p.core_tasks,
          "must_decide": p.must_decide, "dont_buy_early": p.dont_buy_early,
-         "check_points": p.check_points, "related_categories": p.related_categories}
+         "check_points": p.check_points, "related_categories": p.related_categories,
+         "status": p.status or "upcoming"}
         for p in ps
     ]
+
+
+@router.patch("/phases/{phase_id}/advance")
+def advance_phase(phase_id: int, db: Session = Depends(get_db)):
+    """标记当前阶段完成，自动推进到下一阶段"""
+    p = db.query(Phase).filter(Phase.id == phase_id).first()
+    if not p:
+        return {"error": "阶段不存在"}
+
+    # 标记为完成
+    p.status = "completed"
+
+    # 找到下一个阶段，设为 current
+    next_p = db.query(Phase).filter(
+        Phase.phase_num > p.phase_num
+    ).order_by(Phase.phase_num).first()
+
+    if next_p:
+        next_p.status = "current"
+
+    # 确保之前所有阶段都是 completed
+    db.query(Phase).filter(
+        Phase.phase_num < p.phase_num, Phase.status != "completed"
+    ).update({"status": "completed"})
+
+    db.commit()
+    return {
+        "ok": True,
+        "completed": p.name,
+        "current": next_p.name if next_p else "全部完成 🎉",
+    }
 
 
 @router.get("/floors")
