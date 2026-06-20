@@ -189,7 +189,7 @@ export default function Items() {
       {/* Search & filters */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-zinc-100 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative flex-1 max-w-[384px]">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}

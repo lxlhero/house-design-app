@@ -69,7 +69,7 @@ export default function Versions() {
   )
 
   return (
-    <div className="space-y-7 max-w-2xl animate-in">
+    <div className="space-y-7 max-w-[672px] animate-in">
       {/* 标题 */}
       <div className="flex items-center justify-between flex-wrap gap-md">
         <div>
@@ -163,7 +163,7 @@ export default function Versions() {
         return (
           <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-lg"
             onClick={() => setShowConfirm(null)}>
-            <div className="glass-card p-2xl max-w-sm w-full animate-in" onClick={e => e.stopPropagation()}>
+            <div className="glass-card p-9 max-w-[384px] w-full animate-in" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-md mb-lg">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center"
                   style={{ background: 'rgba(255,149,0,0.12)' }}>
