@@ -51,8 +51,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# GZip 压缩 — 大幅减少传输大小（1.6MB JS → ~460KB）
-app.add_middleware(GZipMiddleware, minimum_size=1000)
+# GZip 已移除 — SSE 流式端点不能走压缩，代码分割已覆盖性能优化
 
 # ── API 路由 ──
 app.include_router(items_router)

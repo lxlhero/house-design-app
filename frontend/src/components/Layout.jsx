@@ -27,7 +27,7 @@ export default function Layout() {
     { to: '/items', icon: Package, label: '采购清单' },
     { to: '/import', icon: Upload, label: '导入数据' },
     { to: '/floorplan', icon: LayoutGrid, label: '3D户型' },
-    { to: '/agent',     icon: Bot,        label: 'Mom Agent' },
+    { to: '/agent',     icon: Bot,        label: 'Hermes' },
   ]
 
   return (

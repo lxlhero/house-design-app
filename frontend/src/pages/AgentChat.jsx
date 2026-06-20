@@ -117,7 +117,7 @@ export default function AgentChat() {
             <Sparkles size={16} className="text-white" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-zinc-800">装修管家 Mom Agent</h2>
+              <h2 className="text-sm font-semibold text-zinc-800">Hermes · 装修管家</h2>
             <p className="text-[11px] text-zinc-400">AI 助你推进装修进度</p>
           </div>
         </div>
@@ -193,7 +193,7 @@ export default function AgentChat() {
           </button>
         </div>
         <p className="text-[10px] text-zinc-400 mt-1.5 text-center">
-          Mom Agent · AI 建议仅供参考，重要决策请咨询专业人士
+          Hermes · AI 建议仅供参考，重要决策请咨询专业人士
         </p>
       </div>
     </div>
