@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { Home, Package, Upload, History, LayoutGrid, Menu, X } from 'lucide-react'
+import { Home, Package, Upload, LayoutGrid, Bot, Menu, X } from 'lucide-react'
 import { api } from '../api'
 
 function formatMoney(v) {
@@ -27,7 +27,7 @@ export default function Layout() {
     { to: '/items', icon: Package, label: '采购清单' },
     { to: '/import', icon: Upload, label: '导入数据' },
     { to: '/floorplan', icon: LayoutGrid, label: '3D户型' },
-    { to: '/versions', icon: History, label: '版本管理' },
+    { to: '/agent',     icon: Bot,        label: 'Mom Agent' },
   ]
 
   return (

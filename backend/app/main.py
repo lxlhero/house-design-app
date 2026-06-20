@@ -24,6 +24,7 @@ from .routers import items_router, dashboard_router, import_router, export_route
 from .routers.floorplan_router import router as floorplan_router
 from .routers.log_router import router as log_router
 from .routers.decision_router import router as decision_router
+from .routers.agent_router import router as agent_router
 import os
 
 # 建表
@@ -62,6 +63,7 @@ app.include_router(versions_router)
 app.include_router(floorplan_router)
 app.include_router(log_router)
 app.include_router(decision_router)
+app.include_router(agent_router)
 
 @app.get("/api/health")
 def health():
