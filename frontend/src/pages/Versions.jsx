@@ -61,7 +61,7 @@ export default function Versions() {
   )
 
   if (loading) return (
-    <div className="space-y-xl animate-in">
+    <div className="space-y-7 animate-in">
       <div className="skeleton h-8 w-40 rounded-lg" />
       <div className="skeleton h-5 w-64 rounded-lg" />
       {[1,2,3].map(i => <div key={i} className="skeleton h-24 rounded-2xl" />)}
@@ -69,7 +69,7 @@ export default function Versions() {
   )
 
   return (
-    <div className="space-y-xl max-w-2xl animate-in">
+    <div className="space-y-7 max-w-2xl animate-in">
       {/* 标题 */}
       <div className="flex items-center justify-between flex-wrap gap-md">
         <div>
@@ -99,7 +99,7 @@ export default function Versions() {
       )}
 
       {/* 版本列表 */}
-      <div className="space-y-md">
+      <div className="space-y-4">
         {versions.map((v, i) => {
           const isLatest = i === 0
           const hasSnapshot = !!v.snapshot_id

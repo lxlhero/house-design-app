@@ -70,7 +70,7 @@ export default function Dashboard() {
 
   /* ── 骨架加载 ── */
   if (loading) return (
-    <div className="space-y-xl animate-in">
+    <div className="space-y-7 animate-in">
       <div className="skeleton h-8 w-48 rounded-lg" />
       <div className="skeleton h-5 w-72 rounded-lg" />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-lg mt-xl">
@@ -90,7 +90,7 @@ export default function Dashboard() {
   const statusData = overview.status_counts ? Object.entries(overview.status_counts).map(([k,v]) => ({ name: k, value: v })) : []
 
   return (
-    <div className="space-y-2xl max-w-[1200px]">
+    <div className="space-y-9 max-w-[1200px]">
       {/* 标题 */}
       <div className="animate-in">
         <p className="text-label text-text-secondary uppercase tracking-wider mb-sm">概览</p>

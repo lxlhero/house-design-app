@@ -23,7 +23,7 @@ export default function Import() {
   }
 
   return (
-    <div className="space-y-xl max-w-3xl animate-in">
+    <div className="space-y-7 max-w-3xl animate-in">
       {/* 标题 */}
       <div>
         <p className="text-label text-text-secondary uppercase tracking-wider mb-sm">数据管理</p>
