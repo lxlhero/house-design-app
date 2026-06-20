@@ -32,8 +32,9 @@ function useSpeech(setInput) {
   const [listening, setListening] = useState(false)
   const [supported, setSupported] = useState(false)
   const recRef = useRef(null)
-  const manualStop = useRef(false)  // 区分手动停止 vs 超时
-  const finalText = useRef('')      // 累积最终识别结果
+  const manualStop = useRef(false)
+  const finalText = useRef('')
+  const sendingRef = useRef(false)  // 发送中忽略语音回调
 
   const createRec = () => {
     const R = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -41,37 +42,26 @@ function useSpeech(setInput) {
     const r = new R()
     r.lang = 'zh-CN'
     r.interimResults = true
-    r.continuous = true             // 持续监听，不会说完一句就停
-    // Safari 默认 5-8s 静默超时，通过重启解决
+    r.continuous = true
     r.onresult = e => {
+      if (sendingRef.current) return  // 发送中，忽略
       let interim = ''
       let final = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript
-        if (e.results[i].isFinal) {
-          final += t
-        } else {
-          interim += t
-        }
+        if (e.results[i].isFinal) final += t
+        else interim += t
       }
       if (final) finalText.current += final
       setInput(finalText.current + interim)
     }
     r.onend = () => {
-      // 手动停止 → 不重启
-      if (manualStop.current) {
-        setListening(false)
-        return
-      }
-      // 超时/自动停止 → 重启识别
+      if (manualStop.current) { setListening(false); return }
       try { recRef.current?.start() } catch {}
     }
     r.onerror = (e) => {
-      // 'no-speech' 或 'aborted' 不提示，静默重试
       if (e.error === 'aborted' || e.error === 'no-speech') {
-        if (!manualStop.current) {
-          try { recRef.current?.start() } catch {}
-        }
+        if (!manualStop.current) { try { recRef.current?.start() } catch {} }
         return
       }
       setListening(false)
@@ -81,14 +71,8 @@ function useSpeech(setInput) {
 
   useEffect(() => {
     const r = createRec()
-    if (r) {
-      setSupported(true)
-      recRef.current = r
-    }
-    return () => {
-      manualStop.current = true
-      try { recRef.current?.stop() } catch {}
-    }
+    if (r) { setSupported(true); recRef.current = r }
+    return () => { manualStop.current = true; try { recRef.current?.stop() } catch {} }
   }, [])
 
   const toggle = useCallback(() => {
@@ -100,12 +84,14 @@ function useSpeech(setInput) {
     } else {
       finalText.current = ''
       manualStop.current = false
+      sendingRef.current = false
       setListening(true)
       try { recRef.current.start() } catch {}
     }
   }, [listening])
 
   const reset = useCallback(() => {
+    sendingRef.current = true   // 先标记发送中，阻止后续回调
     manualStop.current = true
     try { recRef.current?.stop() } catch {}
     finalText.current = ''

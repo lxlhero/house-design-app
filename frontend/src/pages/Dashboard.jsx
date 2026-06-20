@@ -77,7 +77,7 @@ export default function Dashboard() {
     })
   }, [])
 
-  // 页面从后台切回时自动刷新数据（Agent 修改后仪表盘即时可见）
+  // 页面切回时自动刷新数据（Agent 修改后仪表盘即时可见）
   const fetchData = async () => {
     try {
       const [ov, cat, ph, fl] = await Promise.all([
@@ -90,9 +90,15 @@ export default function Dashboard() {
     } catch {}
   }
   useEffect(() => {
+    const reload = () => fetchData()
     const onVisible = () => { if (document.visibilityState === 'visible') fetchData() }
+    // pageshow: iOS Safari 切回 tab 时触发（比 visibilitychange 更可靠）
+    window.addEventListener('pageshow', reload)
     document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('pageshow', reload)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   const toggleCat = (id) => {

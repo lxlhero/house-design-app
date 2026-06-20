@@ -2,7 +2,7 @@
 // 策略：/assets/* 缓存优先（hash不变），其他全部网络优先
 // 修复：SPA路由不再被缓存，始终拉最新HTML
 
-const ASSETS_CACHE = 'house-assets-v4';
+const ASSETS_CACHE = 'house-assets-v5';
 
 // ═══ 哪些是静态资源（有hash，可缓存） ═══
 function isStaticAsset(url) {

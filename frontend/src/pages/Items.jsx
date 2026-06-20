@@ -124,11 +124,16 @@ export default function Items() {
   useEffect(() => { fetchItems() }, [fetchItems])
   useEffect(() => { api.filterOptions().then(setFilterOptions) }, [])
 
-  // 页面从后台切回时自动刷新
+  // 页面切回时自动刷新
   useEffect(() => {
+    const reload = () => fetchItems()
     const onVisible = () => { if (document.visibilityState === 'visible') fetchItems() }
+    window.addEventListener('pageshow', reload)
     document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('pageshow', reload)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [fetchItems])
 
   const updateItem = async (id, data) => {
