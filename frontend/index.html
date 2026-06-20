@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1677ff" />
+
+    <!-- Apple iOS/macOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="装修管家" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <title>🏠 装修管家 - 嘉兴别墅</title>
+
+    <!-- 加载前占位：JS 下载期间就能看到，React 挂载后自动消失 -->
+    <style>
+      #app-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        background: linear-gradient(135deg, #eef2ff, #fff, #eff6ff);
+        color: #71717a;
+        font-size: 14px;
+        gap: 12px;
+      }
+      #app-loading .icon { font-size: 48px; }
+      #app-loading .spinner {
+        width: 28px; height: 28px;
+        border: 2px solid #c7d2fe;
+        border-top-color: #4f46e5;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="app-loading">
+        <div class="icon">🏠</div>
+        <div class="spinner"></div>
+        <div>装修管家加载中…</div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

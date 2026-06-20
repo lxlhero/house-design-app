@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* ── iPad 触摸优化 ── */
+
+/* 最小触摸目标 44pt（Apple HIG） */
+button, a, input, select, textarea, [role="button"], .clickable {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* iOS PWA 安全区域（避开刘海/底部指示条） */
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 防止 iOS 双击缩放 */
+button, a {
+  touch-action: manipulation;
+}
+
+/* 表格横向滚动优化 */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  -webkit-transform: translateZ(0); /* GPU 加速 */
+}
+
+.table-wrapper table {
+  min-width: 600px; /* iPad 9.7" 的舒适阅读宽度 */
+}
+
+/* 卡片/布局间距适配 iPad */
+@media (min-width: 768px) {
+  .card-grid {
+    gap: 1rem;
+  }
+}
+
+/* 文字大小适应 iPad 阅读 */
+@media (min-width: 768px) {
+  html {
+    font-size: 16px; /* iPad 基准字号 */
+  }
+}
+
+/* 防止数字被识别为电话号码（iOS） */
+a[href^="tel"] {
+  color: inherit;
+}
