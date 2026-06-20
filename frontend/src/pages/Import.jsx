@@ -36,11 +36,19 @@ export default function Import() {
       <div>
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-zinc-800">导入数据</h2>
-          <a href="/api/export/inventory" download
+          <button onClick={async () => {
+            const token = localStorage.getItem('house_token') || ''
+            const resp = await fetch('/api/export/excel', { headers: { Authorization: `Bearer ${token}` } })
+            if (!resp.ok) return alert('下载失败，请先导入 Excel')
+            const blob = await resp.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a'); a.href = url; a.download = '装修预算_最新.xlsx'; a.click()
+            URL.revokeObjectURL(url)
+          }}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition-colors">
             <Download size={16} />
             下载最新 Excel
-          </a>
+          </button>
         </div>
         <p className="text-sm text-zinc-500 mt-1">上传新版 Excel 全量替换数据库（清空 → 重新导入，Excel 为唯一真相源）</p>
       </div>
