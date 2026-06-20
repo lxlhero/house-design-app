@@ -22,9 +22,13 @@ async def title(request: Request):
 @router.post("/chat")
 async def chat(request: Request, db: Session = Depends(get_db)):
     """流式对话 — Agent 可以调用工具修改数据库"""
+    from ..logging_config import get_logger
+    logger = get_logger("house_design.agent")
     body = await request.json()
     message = body.get("message", "")
     history = body.get("history", [])
+
+    logger.info(f"Chat request: msg={message[:60]}, history_len={len(history)}")
 
     async def event_stream():
         async for chunk in stream_chat(message, history, db=db):
