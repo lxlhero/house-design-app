@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { Send, Sparkles, Trash2 } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Send, Sparkles, Trash2, Mic, MicOff } from 'lucide-react'
 
 const STORAGE_KEY = 'house_agent_history'
 
@@ -11,6 +11,47 @@ function saveHistory(h) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(h.slice(-50)))
 }
 
+// ═══ 语音识别 Hook ═══
+function useSpeech(setInput) {
+  const [listening, setListening] = useState(false)
+  const [supported, setSupported] = useState(false)
+  const recognitionRef = useRef(null)
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (SpeechRecognition) {
+      setSupported(true)
+      const rec = new SpeechRecognition()
+      rec.lang = 'zh-CN'
+      rec.interimResults = true
+      rec.continuous = false
+      rec.onresult = (e) => {
+        let text = ''
+        for (let i = 0; i < e.results.length; i++) {
+          text += e.results[i][0].transcript
+        }
+        setInput(text)
+      }
+      rec.onend = () => setListening(false)
+      rec.onerror = () => setListening(false)
+      recognitionRef.current = rec
+    }
+  }, [])
+
+  const toggle = useCallback(() => {
+    const rec = recognitionRef.current
+    if (!rec) return
+    if (listening) {
+      rec.stop()
+    } else {
+      setListening(true)
+      rec.start()
+    }
+  }, [listening])
+
+  return { listening, supported, toggle }
+}
+
 export default function AgentChat() {
   const [messages, setMessages] = useState(() => loadHistory())
   const [input, setInput] = useState('')
@@ -18,6 +59,7 @@ export default function AgentChat() {
   const [error, setError] = useState(null)
   const messagesEnd = useRef(null)
   const inputRef = useRef(null)
+  const { listening, supported, toggle: toggleMic } = useSpeech(setInput)
 
   useEffect(() => { messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
   useEffect(() => { saveHistory(messages) }, [messages])
@@ -179,11 +221,24 @@ export default function AgentChat() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入问题，Enter 发送…"
+            placeholder={listening ? "正在聆听…" : "输入问题，Enter 发送…"}
             disabled={streaming}
             className="flex-1 px-4 py-3 rounded-xl border border-zinc-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 disabled:bg-zinc-50 transition-all"
             autoFocus
           />
+          {supported && (
+            <button
+              onClick={toggleMic}
+              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
+                listening
+                  ? 'bg-red-500 text-white animate-pulse'
+                  : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
+              }`}
+              title={listening ? "停止录音" : "语音输入"}
+            >
+              {listening ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
+          )}
           <button
             onClick={sendMessage}
             disabled={!input.trim() || streaming}
