@@ -110,16 +110,18 @@ export default function AgentChat() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const messagesEnd = useRef(null)
   const inputRef = useRef(null)
+  const activeIdRef = useRef(activeId)
   const { listening, supported, toggle: toggleMic, reset: resetSpeech } = useSpeech(setInput)
 
   const active = sessions.find(s => s.id === activeId) || null
   const messages = active?.messages || []
 
   useEffect(() => { saveSessions(sessions) }, [sessions])
+  useEffect(() => { activeIdRef.current = activeId }, [activeId])
   useEffect(() => { messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   const updateActive = (fn) => {
-    setSessions(prev => prev.map(s => s.id === activeId ? fn(s) : s))
+    setSessions(prev => prev.map(s => s.id === activeIdRef.current ? fn(s) : s))
   }
 
   const newSession = () => {
@@ -140,20 +142,32 @@ export default function AgentChat() {
 
   const sendMessage = async () => {
     const text = input.trim()
-    if (!text || streaming || !activeId) return
+    if (!text || streaming) return
+    // 自动创建会话（用户不用手动点"新对话"）
+    let id = activeId
+    if (!id) {
+      const s = { id: Date.now().toString(36), title: text.slice(0, 20), messages: [], createdAt: Date.now() }
+      setSessions(prev => [s, ...prev])
+      setActiveId(s.id)
+      id = s.id
+    }
     resetSpeech()  // 停止语音 + 清空缓冲区，防止残留文本回写
     setInput(''); setError(null)
 
     const userMsg = { role: 'user', content: text }
     const agentMsg = { role: 'assistant', content: '' }
-    updateActive(s => ({
-      ...s,
-      messages: [...s.messages, userMsg, agentMsg],
-      title: s.messages.length === 0 ? text.slice(0, 20) : s.title,
+    // 用本地 id 而非闭包 activeId（自动创建时 activeId 还未更新）
+    setSessions(prev => prev.map(s => {
+      if (s.id !== id) return s
+      return {
+        ...s,
+        messages: [...s.messages, userMsg, agentMsg],
+        title: s.messages.length === 0 ? text.slice(0, 20) : s.title,
+      }
     }))
     // 首条消息 → 后台生成标题
     if (messages.length === 0) {
-      generateSessionTitle(text, activeId, setSessions)
+      generateSessionTitle(text, id, setSessions)
     }
     setStreaming(true)
 
@@ -310,7 +324,11 @@ export default function AgentChat() {
                 {listening ? <MicOff size={18} /> : <Mic size={18} />}
               </button>
             )}
-            <button onClick={sendMessage} disabled={!input.trim() || streaming}
+            {/* onMouseDown + onTouchStart 替代 onClick：iPhone WebKit 键盘弹出时会先 dismiss 键盘，导致 button onClick 丢失 */}
+            <button
+              onMouseDown={(e) => { e.preventDefault(); sendMessage() }}
+              onTouchStart={(e) => { e.preventDefault(); sendMessage() }}
+              disabled={!input.trim() || streaming}
               className="w-11 h-11 rounded-xl bg-indigo-500 text-white flex items-center justify-center hover:bg-indigo-600 disabled:opacity-40 transition-all flex-shrink-0">
               <Send size={18} />
             </button>
