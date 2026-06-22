@@ -2,12 +2,13 @@
 import os
 import tempfile
 from fastapi import APIRouter, UploadFile, File, Depends
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models.models import ImportLog
 from ..services.excel_importer import ExcelImporter
 from ..services.version_manager import create_snapshot, cleanup_old_snapshots
-from ..services.excel_store import save_uploaded_excel
+from ..services.excel_store import save_uploaded_excel, list_excel_history, get_history_filepath
 from ..logging_config import get_logger
 
 router = APIRouter(prefix="/api/import", tags=["import"])
@@ -28,7 +29,7 @@ async def import_excel(file: UploadFile = File(...), db: Session = Depends(get_d
         tmp_path = tmp.name
 
     try:
-        # 保存到本地备份（Excel 真理源）
+        # 保存到本地备份（Excel 真理源，同时创建时间戳快照）
         saved_path = save_uploaded_excel(tmp_path)
         logger.info("Excel saved to local store", extra={"extra": {"path": saved_path}})
 
@@ -71,3 +72,20 @@ def download_template():
         "sheets_required": ["预算总览", "采购清单", "装修阶段顺序", "楼层预算"],
         "mode": "全量替换 — 每次导入会清空旧数据，以新版 Excel 为准",
     }
+
+
+# ─── 历史 Excel 版本 ───
+
+@router.get("/excel-history")
+def excel_history():
+    """列出所有历史 Excel 快照"""
+    return list_excel_history()
+
+
+@router.get("/excel-history/{filename}")
+def download_excel_history(filename: str):
+    """下载指定历史 Excel 文件"""
+    path = get_history_filepath(filename)
+    if not path:
+        return {"error": "文件不存在"}
+    return FileResponse(path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename=filename)

@@ -5,6 +5,7 @@ Excel 本地存储服务
 """
 import os
 import shutil
+from datetime import datetime
 import openpyxl
 from copy import copy
 from pathlib import Path
@@ -13,6 +14,7 @@ from ..models.models import Item
 
 # 本地存储目录（相对于项目 backend 目录）
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+HISTORY_DIR = DATA_DIR / "history"
 LOCAL_EXCEL_NAME = "别墅装修_最新.xlsx"
 LOCAL_EXCEL_PATH = DATA_DIR / LOCAL_EXCEL_NAME
 
@@ -20,30 +22,49 @@ LOCAL_EXCEL_PATH = DATA_DIR / LOCAL_EXCEL_NAME
 def init_store():
     """确保 data 目录存在"""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def save_uploaded_excel(filepath: str) -> str:
-    """保存用户上传的 Excel 到本地备份，保留最近 3 份历史"""
+    """保存用户上传的 Excel，同时创建时间戳快照"""
     init_store()
     dest = str(LOCAL_EXCEL_PATH)
 
-    # 轮转旧备份：.bak2 → .bak3, .bak1 → .bak2, 当前 → .bak1
-    for i in range(2, 0, -1):
-        old = Path(f"{dest}.bak{i}")
-        new = Path(f"{dest}.bak{i+1}")
-        if old.exists():
-            if new.exists():
-                new.unlink()
-            old.rename(new)
-
+    # 旧当前文件 → 时间戳快照
     if Path(dest).exists():
-        bak1 = Path(f"{dest}.bak1")
-        if bak1.exists():
-            bak1.unlink()
-        shutil.move(dest, str(bak1))
+        mtime = os.path.getmtime(dest)
+        ts = datetime.fromtimestamp(mtime).strftime("%Y%m%d_%H%M%S")
+        snapshot_name = f"别墅装修_{ts}.xlsx"
+        shutil.copy2(dest, str(HISTORY_DIR / snapshot_name))
 
+    # 新文件覆盖当前
     shutil.copy2(filepath, dest)
     return dest
+
+
+def list_excel_history() -> list[dict]:
+    """列出历史 Excel 快照（按时间倒序）"""
+    init_store()
+    result = []
+    if not HISTORY_DIR.exists():
+        return result
+    for f in sorted(HISTORY_DIR.glob("别墅装修_*.xlsx"), reverse=True):
+        stat = f.stat()
+        result.append({
+            "filename": f.name,
+            "size": stat.st_size,
+            "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+        })
+    return result
+
+
+def get_history_filepath(filename: str) -> str | None:
+    """获取历史 Excel 文件的绝对路径（安全检查）"""
+    safe_name = os.path.basename(filename)
+    if not safe_name.startswith("别墅装修_") or not safe_name.endswith(".xlsx"):
+        return None
+    path = HISTORY_DIR / safe_name
+    return str(path) if path.exists() else None
 
 
 def get_latest_excel_path() -> str | None:

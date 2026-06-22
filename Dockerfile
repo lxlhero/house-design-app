@@ -13,7 +13,7 @@ COPY backend/ ./backend/
 COPY frontend/dist/ ./frontend/dist/
 
 # 数据目录
-RUN mkdir -p /app/backend/data
+RUN mkdir -p /app/backend/data /app/backend/data/history
 
 WORKDIR /app/backend
 

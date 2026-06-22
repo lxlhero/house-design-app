@@ -55,6 +55,8 @@ export const api = {
     })
     return res.json()
   },
+  excelHistory: () => request('/import/excel-history'),
+  downloadHistoryExcel: (filename) => `${API}/import/excel-history/${filename}`,
 
   // Budget config
   updateBudget: (totalBudget) => request('/dashboard/budget', {

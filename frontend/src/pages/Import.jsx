@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Clock, Download } from 'lucide-react'
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Clock, Download, History } from 'lucide-react'
 
 export default function Import() {
   const [file, setFile] = useState(null)
@@ -8,8 +8,14 @@ export default function Import() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [logs, setLogs] = useState([])
+  const [historyFiles, setHistoryFiles] = useState([])
 
-  useEffect(() => { api.importLogs().then(setLogs) }, [])
+  useEffect(() => { api.importLogs().then(setLogs).catch(() => {}) }, [])
+  useEffect(() => { api.excelHistory().then(setHistoryFiles).catch(() => {}) }, [])
+
+  const refreshHistory = () => {
+    api.excelHistory().then(setHistoryFiles).catch(() => {})
+  }
 
   const handleUpload = async () => {
     if (!file) return
@@ -22,13 +28,27 @@ export default function Import() {
         setError(res.error)
       } else {
         setResult(res)
-        const newLogs = await api.importLogs()
+        const newLogs = await api.importLogs().catch(() => [])
         setLogs(newLogs)
+        refreshHistory()
       }
     } catch (e) {
       setError(`上传失败: ${e.message}`)
     }
     setUploading(false)
+  }
+
+  const formatTime = (iso) => {
+    if (!iso) return ''
+    const d = new Date(iso)
+    const pad = n => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+
+  const formatSize = (bytes) => {
+    if (!bytes) return '0 KB'
+    if (bytes < 1024) return `${bytes} B`
+    return `${(bytes / 1024).toFixed(1)} KB`
   }
 
   return (
@@ -123,6 +143,47 @@ export default function Import() {
         </div>
       )}
 
+      {/* Historical Excel versions */}
+      <div className="bg-white rounded-xl shadow-sm border border-zinc-100 overflow-hidden">
+        <div className="px-5 py-4 border-b border-zinc-100">
+          <h3 className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
+            <History size={16} /> 历史 Excel 版本
+          </h3>
+        </div>
+        {historyFiles.length === 0 ? (
+          <div className="p-8 text-center text-sm text-zinc-400">暂无历史版本（导入 Excel 后会自动保存）</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-zinc-100 bg-zinc-50/50 text-left text-xs text-zinc-400 uppercase">
+                <th className="px-5 py-3">文件名</th>
+                <th className="px-5 py-3">大小</th>
+                <th className="px-5 py-3">保存时间</th>
+                <th className="px-5 py-3 w-16">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {historyFiles.map(f => (
+                <tr key={f.filename} className="border-b border-zinc-50 hover:bg-zinc-50/50 transition-colors">
+                  <td className="px-5 py-3 text-zinc-700 font-mono text-xs">{f.filename}</td>
+                  <td className="px-5 py-3 text-zinc-500">{formatSize(f.size)}</td>
+                  <td className="px-5 py-3 text-zinc-400 text-xs">{formatTime(f.created_at)}</td>
+                  <td className="px-5 py-3">
+                    <a
+                      href={api.downloadHistoryExcel(f.filename)}
+                      className="inline-flex items-center gap-1 text-indigo-500 hover:text-indigo-700 text-xs font-medium transition-colors"
+                    >
+                      <Download size={14} />
+                      下载
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
       {/* Import history */}
       <div className="bg-white rounded-xl shadow-sm border border-zinc-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-zinc-100">
@@ -166,6 +227,7 @@ export default function Import() {
           <li>• 系统按采购项名称匹配已存在的记录，相同名称的会<strong>更新</strong>，新出现的会<strong>新增</strong></li>
           <li>• 已有数据中你手动修改的状态、实际花费等不会被覆盖</li>
           <li>• 当新版 Excel 有新预算、新阶段时，直接上传即可批量更新</li>
+          <li>• 每次导入会自动保存历史版本，可在上方「历史 Excel 版本」中下载</li>
         </ul>
       </div>
     </div>
